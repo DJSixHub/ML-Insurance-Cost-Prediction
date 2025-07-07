@@ -27,17 +27,17 @@
 {\normalfont\large\bfseries}{\thesubsection}{1em}{}
 
 \title{
-\textbf{Predicción de Costos de Seguro Médico Basada en Condiciones de Salud}\\
-\Large{Análisis Predictivo del Medical Expenditure Panel Survey (MEPS) 2022}
+\textbf{Predicción de Primas de Seguro Médico con Machine Learning}\\
+\large{Síntesis y análisis del Medical Expenditure Panel Survey (MEPS) 2022}
 }
 
 \author{
-[Nombre del Estudiante]\\
-[Institución Educativa]\\
-[Programa Académico]
+Diego Puentes\\
+Universidad Nacional de Colombia\\
+Ciencia de Datos
 }
 
-\date{\today}
+\date{Julio 2025}
 
 \begin{document}
 
@@ -51,293 +51,46 @@
 
 \section{Introducción}
 
-\subsection{Contexto y Motivación}
+El acceso y costo del seguro médico en Estados Unidos es un reto social y económico. Predecir las primas y gastos médicos individuales permite a aseguradoras y usuarios tomar mejores decisiones y optimizar recursos. Este proyecto utiliza datos reales del MEPS 2022 para construir modelos de predicción de primas, empleando solo variables observadas y evitando campos artificiales.
 
-El sistema de salud estadounidense presenta uno de los mayores desafíos en términos de predicción y gestión de costos médicos. La capacidad de predecir con precisión los gastos médicos individuales no solo tiene implicaciones económicas significativas para las aseguradoras, sino que también puede contribuir a una mejor planificación de recursos sanitarios y políticas públicas de salud.
+\subsection{Problema y Objetivo}
 
-El presente proyecto de Machine Learning tiene como objetivo desarrollar un modelo predictivo que pueda estimar los costos de seguro médico de una persona basándose en sus características demográficas, condiciones de salud, historial laboral y de seguros. Esta predicción es de suma importancia dado que permite a las aseguradoras evaluar el riesgo de manera más precisa y a los individuos planificar mejor sus gastos médicos.
+¿Cómo predecir de forma precisa la prima de seguro médico de una persona usando sus características demográficas, condiciones de salud reales, historial laboral y de seguros? El objetivo es construir un pipeline reproducible de limpieza, integración, análisis y modelado, identificando las variables más relevantes y evaluando el poder predictivo de distintos enfoques.
 
-\subsection{Problema de Investigación}
+\subsection{Resumen del enfoque}
 
-El problema central que aborda este proyecto es: \textit{¿Cómo pueden las características demográficas, las condiciones médicas, el historial laboral y la cobertura de seguros de una persona utilizarse para predecir con precisión sus gastos médicos totales?}
+Se integraron y limpiaron los datos de MEPS 2022, mapeando condiciones médicas a categorías clínicas (CCSR) de forma dinámica y evitando duplicados. Se eliminaron campos inventados y se automatizó la imputación de variables clave. El análisis exploratorio identificó la importancia de variables y la distribución de la variable objetivo. Se probaron modelos lineales y de ensamble, evaluando el impacto de la transformación logarítmica en la predicción.
 
-Esta pregunta es fundamental porque:
-\begin{itemize}
-    \item Los gastos médicos representan una parte significativa del presupuesto familiar en Estados Unidos
-    \item La predicción precisa de costos permite una mejor gestión del riesgo actuarial
-    \item Puede contribuir a la identificación temprana de pacientes de alto riesgo
-    \item Facilita la planificación de recursos en el sistema de salud
-\end{itemize}
+\subsection{Datos y procesamiento}
 
-\subsection{Objetivos del Proyecto}
+Se usaron los archivos públicos de MEPS 2022: datos demográficos, condiciones médicas (ICD-10), historial laboral y seguros. El mapeo de condiciones a CCSR se realizó con referencia oficial, permitiendo agrupar enfermedades de forma clínica y reducir la dimensionalidad. El pipeline automatiza la limpieza, integración y validación, generando un dataset unificado y listo para análisis.
 
-\subsubsection{Objetivo General}
-Desarrollar un modelo de Machine Learning capaz de predecir los gastos médicos totales de una persona basándose en sus características demográficas, condiciones de salud diagnosticadas, historial laboral y cobertura de seguros médicos.
+\section{Metodología}
 
-\subsubsection{Objetivos Específicos}
-\begin{enumerate}
-    \item Procesar y integrar múltiples fuentes de datos del Medical Expenditure Panel Survey (MEPS) 2022
-    \item Realizar un mapeo exhaustivo de códigos médicos ICD-10 a categorías clínicas CCSR para estandarizar las condiciones de salud
-    \item Crear un dataset unificado que combine información demográfica, médica, laboral y de seguros
-    \item Realizar un análisis exploratorio de datos para identificar patrones y relaciones relevantes
-    \item Desarrollar y evaluar diferentes modelos de Machine Learning para la predicción de costos médicos
-    \item Identificar las variables más importantes en la predicción de gastos médicos
-\end{enumerate}
+\subsection{Procesamiento y selección de variables}
 
-\subsection{Fuente de Datos: Medical Expenditure Panel Survey (MEPS)}
+El pipeline filtra personas con peso inválido y primas fuera de rango, elimina duplicados y campos administrativos, y selecciona solo variables observadas: demográficas, socioeconómicas, laborales, de seguros y condiciones médicas agrupadas. El conteo de enfermedades crónicas se realiza dinámicamente usando el mapeo CCSR y el flag de cronicidad, evitando listas fijas y duplicados por persona.
 
-El Medical Expenditure Panel Survey (MEPS) es una encuesta nacional representativa de la población civil no institucionalizada de Estados Unidos, administrada por la Agency for Healthcare Research and Quality (AHRQ). MEPS proporciona estimaciones nacionales sobre el uso de servicios de salud, gastos médicos, fuentes de pago y cobertura de seguros de salud.
+\subsection{Estructura y características del dataset}
 
-\subsubsection{Relevancia del MEPS 2022}
-El año 2022 representa un período particularmente interesante para el análisis de datos médicos debido a:
-\begin{itemize}
-    \item La continuidad de efectos post-pandemia COVID-19 en el sistema de salud
-    \item Cambios en los patrones de utilización de servicios médicos
-    \item Evolución de las coberturas de seguro médico
-    \item Nuevos desafíos en la gestión de enfermedades crónicas
-\end{itemize}
+El dataset final contiene más de 11,800 personas, con información demográfica, médica (condiciones CCSR, número de crónicas únicas), laboral y de seguros. Se mantiene la estructura longitudinal de MEPS, permitiendo análisis temporales y modelado robusto. El formato JSON facilita la manipulación y análisis en Python.
 
-\subsubsection{Componentes del MEPS Utilizados}
-Para este proyecto se utilizaron cuatro componentes principales del MEPS 2022:
-\begin{enumerate}
-    \item \textbf{Full Year Consolidated (FYC):} Datos demográficos, socioeconómicos y de gastos médicos totales
-    \item \textbf{Conditions:} Condiciones médicas diagnosticadas con códigos ICD-10
-    \item \textbf{Jobs:} Historial laboral y características del empleo
-    \item \textbf{Private Insurance:} Información sobre cobertura de seguros privados
-\end{enumerate}
+% ...se omiten tablas y se sintetiza la descripción...
 
-\section{Metodología de Obtención y Procesamiento de Datos}
+\section{Análisis exploratorio y modelado}
 
-\subsection{Descarga y Adquisición de Datos}
+Se realizó un análisis exhaustivo de nulos, outliers, variables categóricas y distribución de la variable objetivo. Se imputó el estado de salud percibido usando árboles de decisión y reglas claras. Se analizaron la importancia de variables y la distribución de primas en escala lineal y logarítmica.
 
-\subsubsection{Proceso de Descarga}
-Los datos del MEPS 2022 se obtuvieron directamente desde el sitio web oficial de AHRQ (Agency for Healthcare Research and Quality). El proceso de descarga se automatizó mediante el script \texttt{download\_meps\_complete.py}, que garantiza la integridad y consistencia de los datos descargados.
+Se probaron modelos lineales, Random Forest y KNN, mostrando bajo poder predictivo absoluto, pero mejoría al transformar la variable objetivo. La importancia de variables resalta el peso de edad, número de crónicas y estado de salud percibido.
 
-Los archivos descargados incluyen:
-\begin{itemize}
-    \item \texttt{meps\_fyc\_2022.csv}: Datos consolidados anuales
-    \item \texttt{meps\_cond\_2022.csv}: Condiciones médicas
-    \item \texttt{meps\_jobs\_2022.csv}: Historial laboral
-    \item \texttt{meps\_prpl\_2022.csv}: Seguros privados
-\end{itemize}
+\section{Conclusiones}
 
-\subsubsection{Fuentes de Mapeo y Referencia}
-Para el procesamiento y mapeo de los datos se utilizaron las siguientes fuentes oficiales:
-\begin{enumerate}
-    \item \textbf{CCSR Reference 2025} (\texttt{ccsr\_reference\_2025.csv}): Mapeo de códigos ICD-10 a categorías Clinical Classifications Software Refined (CCSR)
-    \item \textbf{MEPS Documentation} (\texttt{h224doc.pdf}): Documentación técnica oficial del MEPS 2022
-    \item \textbf{PUFID Reference} (\texttt{PUFID.csv}): Identificadores de archivos públicos del MEPS
-\end{enumerate}
+El pipeline desarrollado permite predecir primas de seguro médico usando solo variables reales y observadas, con un proceso reproducible y transparente. La integración dinámica de condiciones crónicas y la automatización de la limpieza e imputación mejoran la calidad del dataset. Aunque el poder predictivo es limitado, el análisis aporta claridad sobre los factores que más inciden en el costo del seguro médico en la población estadounidense.
 
-\subsection{Justificación del Enfoque de Procesamiento}
+\vspace{1em}
+\textbf{Diego Puentes -- Ciencia de Datos, Julio 2025}
 
-\subsubsection{Elección del Mapeo CCSR}
-La decisión de mapear los códigos ICD-10 a categorías CCSR se basó en las siguientes consideraciones:
-
-\begin{enumerate}
-    \item \textbf{Reducción de Dimensionalidad:} Los códigos ICD-10 incluyen más de 70,000 códigos específicos, lo que resultaría en una alta dimensionalidad y dispersión de datos. Las categorías CCSR reducen esta complejidad a aproximadamente 530 categorías clínicamente relevantes.
-    
-    \item \textbf{Agrupación Clínica Significativa:} CCSR agrupa condiciones médicas relacionadas de manera clínicamente coherente, lo que permite identificar patrones de costos más generalizables.
-    
-    \item \textbf{Consistencia en la Predicción:} Las categorías CCSR son más estables a lo largo del tiempo y permiten mejor generalización del modelo.
-    
-    \item \textbf{Interpretabilidad Médica:} Los profesionales de la salud pueden interpretar más fácilmente las categorías CCSR que códigos ICD-10 específicos.
-\end{enumerate}
-
-\subsubsection{Selección de Variables}
-El proceso de selección de variables se rigió por los siguientes criterios:
-
-\textbf{Variables Incluidas:}
-\begin{itemize}
-    \item \textbf{Demográficas:} Edad, sexo, raza/etnicidad, estado civil, región geográfica
-    \item \textbf{Socioeconómicas:} Categoría de pobreza, ingresos familiares
-    \item \textbf{Médicas:} Condiciones CCSR, edad al diagnóstico, estado de salud percibido
-    \item \textbf{Laborales:} Horas trabajadas, tipo de empleo, oferta de seguro laboral
-    \item \textbf{Seguros:} Tipo de cobertura, primas out-of-pocket
-    \item \textbf{Target:} Gastos médicos totales, gastos out-of-pocket
-\end{itemize}
-
-\textbf{Variables Excluidas y Justificación:}
-\begin{enumerate}
-    \item \textbf{Identificadores únicos:} Variables como ID específicos de persona, trabajo o condición que no aportan valor predictivo
-    \item \textbf{Variables administrativas:} Códigos internos de procesamiento, flags de validación
-    \item \textbf{Información post-hoc:} Variables que solo se conocen después del evento a predecir
-    \item \textbf{Variables con alta cardinalidad sin valor clínico:} Códigos específicos que no se agrupan en categorías meaningful
-    \item \textbf{Información duplicada:} Variables que representan la misma información en diferentes formatos
-\end{enumerate}
-
-\subsection{Proceso de Integración de Datos}
-
-\subsubsection{Mapeo y Transformación}
-El proceso de mapeo se implementó en \texttt{mapeo\_actualizado.py} y siguió la siguiente metodología:
-
-\begin{enumerate}
-    \item \textbf{Limpieza de Datos:} Eliminación de registros incompletos o inconsistentes
-    \item \textbf{Mapeo de Códigos:} Conversión de códigos ICD-10 a categorías CCSR utilizando la tabla de referencia oficial
-    \item \textbf{Normalización:} Estandarización de formatos de fecha, valores numéricos y categóricos
-    \item \textbf{Agregación:} Combinación de múltiples registros por persona en estructuras coherentes
-    \item \textbf{Validación:} Verificación de integridad y consistencia de los datos procesados
-\end{enumerate}
-
-\subsubsection{Estructura Longitudinal}
-Los datos se organizaron manteniendo la estructura longitudinal original del MEPS, que incluye múltiples "rounds" de recolección de datos a lo largo del año. Esta estructura permite:
-\begin{itemize}
-    \item Capturar cambios en el estado de salud a lo largo del tiempo
-    \item Modelar la evolución de condiciones crónicas
-    \item Incorporar cambios en el empleo y cobertura de seguros
-    \item Mejorar la precisión predictiva mediante datos temporales
-\end{itemize}
-
-\subsection{Resultado Final: Dataset Unificado}
-
-\subsubsection{Formato del Dataset}
-El resultado del procesamiento es un archivo JSON unificado (\texttt{meps\_2022\_unified\_reduced.json}) que contiene 11,869 registros de personas con información completa. La elección del formato JSON se justifica por:
-\begin{itemize}
-    \item Flexibilidad para representar estructuras de datos complejas y anidadas
-    \item Capacidad de manejar listas de condiciones médicas, empleos y seguros por persona
-    \item Facilidad de procesamiento en diversos lenguajes de programación
-    \item Conservación de relaciones jerárquicas entre datos
-\end{itemize}
-
-\section{Estructura del Dataset Final}
-
-\subsection{Organización General}
-El dataset final está organizado como un diccionario donde cada clave representa un identificador único de persona, y cada valor contiene toda la información relevante para esa persona.
-
-\subsection{Variables Demográficas}
-\begin{longtable}{|p{4cm}|p{2cm}|p{8cm}|}
-\hline
-\textbf{Variable} & \textbf{Tipo} & \textbf{Descripción} \\
-\hline
-\endfirsthead
-\hline
-\textbf{Variable} & \textbf{Tipo} & \textbf{Descripción} \\
-\hline
-\endhead
-id\_persona & Integer & Identificador único de la persona \\
-\hline
-edad & Float & Edad en años al momento de la encuesta \\
-\hline
-sexo & String & Género ("Male", "Female") \\
-\hline
-raza\_etnicidad & String & Categoría racial/étnica según clasificación MEPS \\
-\hline
-estado\_civil & String & Estado civil ("Married", "Never married", "Divorced", etc.) \\
-\hline
-region & String & Región geográfica ("Northeast", "South", "West", "Midwest") \\
-\hline
-categoria\_pobreza & String & Categoría de pobreza ("Poor", "Low income", "Middle income", "High income") \\
-\hline
-peso\_persona & Float & Peso estadístico para extrapolación poblacional \\
-\hline
-\end{longtable}
-
-\subsection{Variables de Gastos Médicos (Variables Objetivo)}
-\begin{longtable}{|p{4cm}|p{2cm}|p{8cm}|}
-\hline
-\textbf{Variable} & \textbf{Tipo} & \textbf{Descripción} \\
-\hline
-\endfirsthead
-\hline
-\textbf{Variable} & \textbf{Tipo} & \textbf{Descripción} \\
-\hline
-\endhead
-gastos\_medicos\_totales & Float & Gastos médicos totales anuales en dólares \\
-\hline
-gastos\_out\_of\_pocket & Float & Gastos médicos pagados directamente por el paciente \\
-\hline
-\end{longtable}
-
-\subsection{Variables de Cobertura de Seguros}
-\begin{longtable}{|p{4cm}|p{2cm}|p{8cm}|}
-\hline
-\textbf{Variable} & \textbf{Tipo} & \textbf{Descripción} \\
-\hline
-\endfirsthead
-\hline
-\textbf{Variable} & \textbf{Tipo} & \textbf{Descripción} \\
-\hline
-\endhead
-cobertura\_seguro & String & Tipo de cobertura de seguro principal \\
-\hline
-estado\_salud\_percibido & String & Percepción subjetiva del estado de salud \\
-\hline
-\end{longtable}
-
-\subsection{Estructura de Condiciones Médicas}
-Las condiciones médicas se almacenan como una lista de diccionarios, donde cada condición incluye:
-\begin{longtable}{|p{4cm}|p{2cm}|p{8cm}|}
-\hline
-\textbf{Variable} & \textbf{Tipo} & \textbf{Descripción} \\
-\hline
-\endfirsthead
-\hline
-\textbf{Variable} & \textbf{Tipo} & \textbf{Descripción} \\
-\hline
-\endhead
-descripcion\_ccsr & String & Categoría CCSR de la condición médica \\
-\hline
-edad\_diagnostico & Mixed & Edad al momento del diagnóstico (Float o "Inapplicable") \\
-\hline
-es\_lesion & String & Indica si la condición es resultado de una lesión \\
-\hline
-round\_reportado & Integer & Round temporal en que se reportó la condición \\
-\hline
-\end{longtable}
-
-\subsection{Estructura de Historial Laboral}
-El historial laboral se representa como una lista de empleos, cada uno con:
-\begin{longtable}{|p{4cm}|p{2cm}|p{8cm}|}
-\hline
-\textbf{Variable} & \textbf{Tipo} & \textbf{Descripción} \\
-\hline
-\endfirsthead
-\hline
-\textbf{Variable} & \textbf{Tipo} & \textbf{Descripción} \\
-\hline
-\endhead
-id\_trabajo & Integer & Identificador único del trabajo \\
-\hline
-seguro\_ofrecido & String & Indica si el empleador ofrece seguro médico \\
-\hline
-trabajo\_temporal & String & Indica si el trabajo es temporal \\
-\hline
-empleado\_asalariado & String & Indica si el empleado recibe salario fijo \\
-\hline
-horas\_por\_semana & String & Horas trabajadas por semana \\
-\hline
-round\_reportado & Integer & Round temporal del reporte laboral \\
-\hline
-\end{longtable}
-
-\subsection{Estructura de Historial de Seguros}
-El historial de seguros incluye información por período temporal:
-\begin{longtable}{|p{4cm}|p{2cm}|p{8cm}|}
-\hline
-\textbf{Variable} & \textbf{Tipo} & \textbf{Descripción} \\
-\hline
-\endfirsthead
-\hline
-\textbf{Variable} & \textbf{Tipo} & \textbf{Descripción} \\
-\hline
-\endhead
-cobertura\_seguro & String & Estado de cobertura de seguro en el período \\
-\hline
-prima\_out\_of\_pocket & Mixed & Prima pagada directamente por el asegurado \\
-\hline
-prima\_out\_of\_pocket\_editada & Mixed & Prima editada tras validación \\
-\hline
-round\_reportado & Integer & Round temporal del reporte de seguro \\
-\hline
-\end{longtable}
-
-\subsection{Estadísticas Descriptivas del Dataset}
-\begin{itemize}
-    \item \textbf{Tamaño total:} 11,869 individuos
-    \item \textbf{Condiciones médicas:} 42,101 registros totales, 184 categorías CCSR únicas
-    \item \textbf{Registros laborales:} 27,319 empleos registrados
-    \item \textbf{Registros de seguros:} 38,425 períodos de cobertura
-    \item \textbf{Completitud promedio:} 94.2\% de los campos con información válida
+\end{document}
     \item \textbf{Rango temporal:} 9 rounds de recolección de datos
 \end{itemize}
 

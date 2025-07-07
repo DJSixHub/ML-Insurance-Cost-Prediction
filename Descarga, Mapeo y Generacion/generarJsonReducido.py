@@ -196,64 +196,136 @@ def filtrar_datos_por_muestra(df_demographics, df_conditions, df_jobs, df_insura
     return df_demo_filtered, df_cond_filtered, df_jobs_filtered, df_insurance_filtered
 
 def crear_json_unificado(df_demographics, df_conditions, df_jobs, df_insurance, df_ccsr_ref):
-    """Crear el JSON unificado con una entrada por persona"""
+    # ...existing code...
+    """Crear el JSON unificado con una entrada por persona, dividiendo condiciones médicas en actuales/pasadas y calculando cantidad_lesiones"""
     print("Creando JSON unificado...")
-    
+
+    # --- Cargar mapeos crónicos (igual que en generar_snapshots.py) ---
+    # ...existing code...
+    def filtrar_historial_seguros(unified_data):
+        # Filtro final: eliminar registros de historial_seguros con prima_out_of_pocket_editada igual a 0.0
+        for person_id, person_data in unified_data.items():
+            seguros_filtrados = []
+            for seguro in person_data['historial_seguros']:
+                try:
+                    prima_val = float(seguro.get('prima_out_of_pocket_editada', 0))
+                except (TypeError, ValueError):
+                    prima_val = 0
+                if prima_val != 0.0:
+                    seguros_filtrados.append(seguro)
+            person_data['historial_seguros'] = seguros_filtrados
+
+        # Eliminar personas que se hayan quedado sin historial_seguros tras el filtro
+        personas_sin_seguros = [pid for pid, pdata in unified_data.items() if not pdata['historial_seguros']]
+        for pid in personas_sin_seguros:
+            del unified_data[pid]
+        return unified_data
+    CCIR_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data', 'info', 'CCIR_v2025-1.csv'))
+    CCSR_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data', 'info', 'ccsr_reference_2025.csv'))
+    def cargar_mapeos_cronicos():
+        try:
+            df_ccir = pd.read_csv(CCIR_FILE, skiprows=2)
+        except FileNotFoundError:
+            alt_ccir = os.path.join('data', 'info', 'CCIR_v2025-1.csv')
+            df_ccir = pd.read_csv(alt_ccir, skiprows=2)
+        try:
+            df_ccsr = pd.read_csv(CCSR_FILE)
+        except FileNotFoundError:
+            alt_ccsr = os.path.join('data', 'info', 'ccsr_reference_2025.csv')
+            df_ccsr = pd.read_csv(alt_ccsr)
+        ccir_chronic_map = {}
+        icd_col = None
+        chronic_col = None
+        for col in df_ccir.columns:
+            col_clean = str(col).strip("'\"")
+            if 'ICD-10-CM CODE' in col_clean and 'DESCRIPTION' not in col_clean:
+                icd_col = col
+            elif 'CHRONIC INDICATOR' in col_clean:
+                chronic_col = col
+        if icd_col is not None and chronic_col is not None:
+            for _, row in df_ccir.iterrows():
+                icd10_code = str(row.get(icd_col, '')).strip("'\"")
+                chronic_indicator = row.get(chronic_col, 0)
+                if pd.notna(icd10_code) and icd10_code:
+                    ccir_chronic_map[icd10_code] = int(chronic_indicator) == 1
+        ccsr_to_icd10_map = {}
+        for _, row in df_ccsr.iterrows():
+            ccsr_desc = row.get('CCSR Category Description', '')
+            icd10_code = row.get('ICD-10-CM Code', '')
+            if pd.notna(ccsr_desc) and pd.notna(icd10_code) and ccsr_desc and icd10_code:
+                if ccsr_desc not in ccsr_to_icd10_map:
+                    ccsr_to_icd10_map[ccsr_desc] = set()
+                ccsr_to_icd10_map[ccsr_desc].add(icd10_code)
+        return ccir_chronic_map, ccsr_to_icd10_map
+    def es_condicion_cronica(descripcion_ccsr, ccir_chronic_map, ccsr_to_icd10_map):
+        if not descripcion_ccsr or descripcion_ccsr == "No especificado":
+            return False
+        icd10_codes = ccsr_to_icd10_map.get(descripcion_ccsr, set())
+        if not icd10_codes:
+            return False
+        for icd10_code in icd10_codes:
+            if ccir_chronic_map.get(icd10_code, False):
+                return True
+        return False
+    ccir_chronic_map, ccsr_to_icd10_map = cargar_mapeos_cronicos()
+
+    # Mapeo robusto de estado de salud percibido
+    def map_estado_salud(val):
+        mapping = {
+            'excellent': 'excellent',
+            'very good': 'very good',
+            'good': 'good',
+            'fair': 'fair',
+            'poor': 'poor',
+            'excelente': 'excellent',
+            'muy buena': 'very good',
+            'buena': 'good',
+            'regular': 'fair',
+            'mala': 'poor',
+        }
+        # Lowercase and strip
+        if val is None:
+            return 'fair'  # Default fallback
+        v = str(val).strip().lower()
+        # Map common non-informative values to a default (e.g., 'fair')
+        if v in ['inapplicable', 'unknown/not reported', "don't know", 'unknown', 'not ascertained', 'refused', 'na', 'n/a', '', 'nan', 'none']:
+            return 'fair'  # Or choose another default if preferred
+        # Try mapping
+        return mapping.get(v, 'fair')  # Default to 'fair' if not found
+
     unified_data = {}
-    
-    # Procesar cada persona
+    # Inicializar personas
     for _, person_row in df_demographics.iterrows():
         person_id = person_row['person_unique_id']
-        
-        # Información demográfica base
         person_data = {
             'edad': person_row.get('age_last_birthday', None),
             'sexo': person_row.get('sex', None),
             'raza_etnicidad': person_row.get('race_ethnicity', None),
             'estado_civil': person_row.get('marital_status_2022', None),
             'region': person_row.get('region_2022', None),
-            'gastos_medicos_totales': person_row.get('total_healthcare_exp_2022', None),
-            'gastos_out_of_pocket': person_row.get('total_out_of_pocket_exp_2022', None),
             'categoria_pobreza': person_row.get('poverty_category_2022', None),
             'cobertura_seguro': person_row.get('insurance_coverage_2022', None),
-            'estado_salud_percibido': person_row.get('perceived_health_status', None),
-            'peso_persona': person_row.get('person_weight_2022', None),
-            'condiciones_medicas': [],
+            'estado_salud_percibido': map_estado_salud(person_row.get('perceived_health_status', None)),
+            'condiciones_medicas_actuales': [],
+            'condiciones_medicas_pasadas': [],
             'historial_empleo': [],
             'historial_seguros': [],
-            'max_round_seguros': 0  # Para tracking del round máximo
+            'max_round_seguros': 0
         }
-        
         unified_data[person_id] = person_data
-    
-    # PASO 1: Procesar historial de seguros privados primero para determinar round máximo
-    print("Procesando historial de seguros privados...")
-    insurance_counts = {'total_processed': 0, 'with_valid_premium': 0, 'inapplicable_skipped': 0}
-    
+
+    # Procesar historial de seguros para determinar round máximo
     for _, insurance_row in df_insurance.iterrows():
         person_id = insurance_row['person_unique_id']
         if person_id in unified_data:
-            prima_value = insurance_row.get('out_of_pocket_premium', None)
-            
-            # Solo agregar registros con prima válida (no "Inapplicable", no NaN, no vacío)
-            if (prima_value is not None and 
-                prima_value != 'Inapplicable' and 
-                prima_value != '' and 
-                pd.notna(prima_value)):
-                
+            prima_editada = insurance_row.get('out_of_pocket_premium_edited', None)
+            if (prima_editada is not None and prima_editada != '' and prima_editada != 'Inapplicable' and pd.notna(prima_editada)):
                 round_num = insurance_row.get('round_number', None)
-                
                 insurance_data = {
                     'cobertura_seguro': insurance_row.get('insurance_coverage', None),
-                    # 'prima_out_of_pocket': prima_value,  # Eliminado del JSON final
-                    'prima_out_of_pocket_editada': insurance_row.get('out_of_pocket_premium_edited', None),
-                    'round_reportado': round_num
+                    'prima_out_of_pocket_editada': prima_editada
                 }
-                
                 unified_data[person_id]['historial_seguros'].append(insurance_data)
-                insurance_counts['with_valid_premium'] += 1
-                
-                # Actualizar el round máximo para esta persona
                 if round_num is not None and pd.notna(round_num):
                     try:
                         round_num_int = int(round_num)
@@ -261,131 +333,88 @@ def crear_json_unificado(df_demographics, df_conditions, df_jobs, df_insurance, 
                             unified_data[person_id]['max_round_seguros'] = round_num_int
                     except (ValueError, TypeError):
                         pass
-            else:
-                insurance_counts['inapplicable_skipped'] += 1
-            
-            insurance_counts['total_processed'] += 1
-    
-    print(f"✓ Seguros procesados: {insurance_counts['total_processed']}")
-    print(f"✓ Registros con prima válida agregados: {insurance_counts['with_valid_premium']}")
-    print(f"✓ Registros con prima 'Inapplicable' omitidos: {insurance_counts['inapplicable_skipped']}")
-    print(f"✓ Solo se agregaron registros de seguros con prima válida (sin 'Inapplicable')")
-    
-    # PASO 2: Procesar condiciones médicas filtrando por round máximo de seguros
-    print("Procesando condiciones médicas...")
-    condition_counts = {'total_processed': 0, 'filtered_by_round': 0}
-    
+
+    # Procesar condiciones médicas: dividir en actuales/pasadas y contar lesiones
     for _, condition_row in df_conditions.iterrows():
         person_id = condition_row['person_unique_id']
         if person_id in unified_data:
-            condition_round = condition_row.get('condition_round', None)
             max_round_seguros = unified_data[person_id]['max_round_seguros']
-            
-            # Solo agregar si el round de la condición <= round máximo de seguros
-            should_include = True
-            if condition_round is not None and pd.notna(condition_round) and max_round_seguros > 0:
-                try:
-                    condition_round_int = int(condition_round)
-                    if condition_round_int > max_round_seguros:
-                        should_include = False
-                        condition_counts['filtered_by_round'] += 1
-                except (ValueError, TypeError):
-                    pass
-            
-            if should_include:
-                condition_data = {
-                    'descripcion_ccsr': condition_row.get('ccsr_description', None),
-                    'edad_diagnostico': condition_row.get('age_at_diagnosis', None),
-                    'es_lesion': condition_row.get('injury_flag', None),
-                    'round_reportado': condition_row.get('condition_round', None)
-                }
-                unified_data[person_id]['condiciones_medicas'].append(condition_data)
-            
-            condition_counts['total_processed'] += 1
-    
-    print(f"✓ Condiciones procesadas: {condition_counts['total_processed']}")
-    print(f"✓ Condiciones filtradas por round máximo: {condition_counts['filtered_by_round']}")
-    print(f"✓ Condiciones incluidas: {condition_counts['total_processed'] - condition_counts['filtered_by_round']}")
-    
-    # PASO 3: Procesar historial de empleos filtrando por round máximo de seguros
-    print("Procesando historial de empleos...")
-    job_counts = {'total_processed': 0, 'filtered_by_round': 0}
-    
+            condition_round = condition_row.get('condition_round', None)
+            try:
+                condition_round_int = int(condition_round) if pd.notna(condition_round) else None
+            except (ValueError, TypeError):
+                condition_round_int = None
+            descripcion_ccsr = condition_row.get('ccsr_description', None)
+            injury_flag = condition_row.get('injury_flag', None)
+            es_cronica = es_condicion_cronica(descripcion_ccsr, ccir_chronic_map, ccsr_to_icd10_map)
+            # Lesiones no se consideran ya que no hay registros en el dataset original
+            cond_dict = {
+                'descripcion_ccsr': descripcion_ccsr,
+                'edad_diagnostico': condition_row.get('age_at_diagnosis', None),
+                'icd10_code': condition_row.get('icd10_code', None),
+                'ccsr_category_1': condition_row.get('ccsr_category_1', None)
+            }
+            if (es_cronica or (condition_round_int is not None and condition_round_int == max_round_seguros)):
+                unified_data[person_id]['condiciones_medicas_actuales'].append(cond_dict)
+            elif (not es_cronica and (condition_round_int is not None and condition_round_int < max_round_seguros)):
+                unified_data[person_id]['condiciones_medicas_pasadas'].append(cond_dict)
+
+    # Procesar historial de empleos (igual que antes, pero mapeando valores a 'Not Reported')
+    valores_no_reportados = set([
+        'Inapplicable', 'Unknown/Not reported', "Don't know", 'Unknown', 'Not ascertained', 'Refused', 'NA', 'N/A', '', None
+    ])
+    valores_no_reportados_lower = set(x.lower() for x in valores_no_reportados if isinstance(x, str))
+    def map_no_reportado(val):
+        if val is None:
+            return 'Not Reported'
+        if isinstance(val, str):
+            v = val.strip().lower()
+            if v in valores_no_reportados_lower:
+                return 'Not Reported'
+        if val in valores_no_reportados:
+            return 'Not Reported'
+        return val
     for _, job_row in df_jobs.iterrows():
         person_id = job_row['person_unique_id']
         if person_id in unified_data:
             job_round = job_row.get('round_number', None)
             max_round_seguros = unified_data[person_id]['max_round_seguros']
-            
-            # Solo agregar si el round del empleo <= round máximo de seguros
             should_include = True
             if job_round is not None and pd.notna(job_round) and max_round_seguros > 0:
                 try:
                     job_round_int = int(job_round)
                     if job_round_int > max_round_seguros:
                         should_include = False
-                        job_counts['filtered_by_round'] += 1
                 except (ValueError, TypeError):
                     pass
-            
             if should_include:
                 job_data = {
-                    'seguro_ofrecido': job_row.get('insurance_offered', None),
-                    'trabajo_temporal': job_row.get('temporary_job', None),
-                    'empleado_asalariado': job_row.get('salaried_employee', None),
-                    'salario_por_hora': job_row.get('hourly_wage', None),
-                    'horas_por_semana': job_row.get('hours_per_week', None),
-                    'round_reportado': job_row.get('round_number', None)
+                    'seguro_ofrecido': map_no_reportado(job_row.get('insurance_offered', None)),
+                    'trabajo_temporal': map_no_reportado(job_row.get('temporary_job', None)),
+                    'empleado_asalariado': map_no_reportado(job_row.get('salaried_employee', None)),
+                    'salario_por_hora': map_no_reportado(job_row.get('hourly_wage', None)),
+                    'horas_por_semana': map_no_reportado(job_row.get('hours_per_week', None))
                 }
-                
-                # Añadir directamente
                 unified_data[person_id]['historial_empleo'].append(job_data)
-            
-            job_counts['total_processed'] += 1
-    
-    print(f"✓ Empleos procesados: {job_counts['total_processed']}")
-    print(f"✓ Empleos filtrados por round máximo: {job_counts['filtered_by_round']}")
-    print(f"✓ Empleos incluidos: {job_counts['total_processed'] - job_counts['filtered_by_round']}")
-    
-    # Estadísticas finales del filtrado por round máximo
-    print("\n--- Resumen del filtrado por round máximo ---")
-    personas_con_max_round = sum(1 for person in unified_data.values() if person['max_round_seguros'] > 0)
-    print(f"✓ Personas con round máximo de seguros determinado: {personas_con_max_round}")
-    print(f"✓ Total de registros filtrados por round máximo:")
-    print(f"   - Condiciones médicas: {condition_counts['filtered_by_round']}")
-    print(f"   - Empleos: {job_counts['filtered_by_round']}")
-    print(f"   - Total filtrado: {condition_counts['filtered_by_round'] + job_counts['filtered_by_round']}")
-    print("✓ Solo se incluyen condiciones médicas y empleos con round <= round máximo de seguros")
-    
-    # Verificación final: asegurar que todas las personas tienen al menos un registro de seguro válido
-    print("\nVerificación final de datos de seguros...")
+
+    # Eliminar personas que no tengan al menos un seguro con prima válida (>0, no vacío, no inaplicable, no NaN)
     personas_sin_prima_valida = []
-    for person_id, person_data in unified_data.items():
-        if not person_data['historial_seguros']:
-            personas_sin_prima_valida.append(person_id)
-            continue
-        
-        # Verificar que al menos un registro tenga prima válida
+    for person_id, person_data in list(unified_data.items()):
         tiene_prima_valida = False
         for seguro in person_data['historial_seguros']:
             prima_editada = seguro.get('prima_out_of_pocket_editada')
-            if prima_editada is not None and prima_editada != 'Inapplicable' and prima_editada != '':
+            try:
+                prima_val = float(prima_editada)
+            except (TypeError, ValueError):
+                prima_val = None
+            if prima_val is not None and prima_val > 0:
                 tiene_prima_valida = True
                 break
-        
         if not tiene_prima_valida:
             personas_sin_prima_valida.append(person_id)
-    
-    if personas_sin_prima_valida:
-        print(f"⚠️  Encontradas {len(personas_sin_prima_valida)} personas sin prima válida")
-        # Eliminar personas sin prima válida del dataset final
-        for person_id in personas_sin_prima_valida:
-            del unified_data[person_id]
-        print(f"✓ Eliminadas {len(personas_sin_prima_valida)} personas sin prima válida")
-        print(f"✓ Total final de personas: {len(unified_data)}")
-    else:
-        print("✓ Todas las personas tienen al menos un registro de prima válida")
-    
+    for person_id in personas_sin_prima_valida:
+        del unified_data[person_id]
+    # No aplicar ningún otro filtro de exclusión
     return unified_data
 
 def generar_estadisticas(unified_data):
@@ -393,11 +422,17 @@ def generar_estadisticas(unified_data):
     print("Generando estadísticas...")
     
     total_personas = len(unified_data)
-    personas_con_condiciones = sum(1 for person in unified_data.values() if person['condiciones_medicas'])
+    personas_con_condiciones = sum(
+        1 for person in unified_data.values()
+        if person.get('condiciones_medicas_actuales', []) or person.get('condiciones_medicas_pasadas', [])
+    )
     personas_con_empleos = sum(1 for person in unified_data.values() if person['historial_empleo'])
     personas_con_seguros = sum(1 for person in unified_data.values() if person['historial_seguros'])
 
-    total_condiciones = sum(len(person['condiciones_medicas']) for person in unified_data.values())
+    total_condiciones = sum(
+        len(person.get('condiciones_medicas_actuales', [])) + len(person.get('condiciones_medicas_pasadas', []))
+        for person in unified_data.values()
+    )
     promedio_condiciones = total_condiciones / total_personas if total_personas > 0 else 0
 
     # Evitar división por cero en estadísticas
@@ -410,6 +445,8 @@ def generar_estadisticas(unified_data):
             'total_condiciones': 0,
             'promedio_condiciones': 0,
             'porcentaje_con_condiciones': 0,
+            'porcentaje_con_empleos': 0,
+            'porcentaje_con_seguros': 0
         }
         print("❌ No hay personas válidas en el dataset final. Revisa los filtros y la lógica de inclusión de primas.")
         return stats
@@ -421,17 +458,16 @@ def generar_estadisticas(unified_data):
         'personas_con_seguros': personas_con_seguros,
         'total_condiciones': total_condiciones,
         'promedio_condiciones': promedio_condiciones,
-        'porcentaje_con_condiciones': (personas_con_condiciones / total_personas) * 100,
-        'porcentaje_con_empleos': (personas_con_empleos / total_personas) * 100,
-        'porcentaje_con_seguros': (personas_con_seguros / total_personas) * 100
+        'porcentaje_con_condiciones': (personas_con_condiciones / total_personas) * 100 if total_personas > 0 else 0,
+        'porcentaje_con_empleos': (personas_con_empleos / total_personas) * 100 if total_personas > 0 else 0,
+        'porcentaje_con_seguros': (personas_con_seguros / total_personas) * 100 if total_personas > 0 else 0
     }
-    
     return stats
 
 def guardar_json(unified_data, filename='meps_2022_unified_reduced.json'):
-    """Guardar el JSON unificado"""
+    """Guardar el JSON unificado, eliminando campos internos innecesarios de condiciones médicas"""
     print(f"Guardando datos en {filename}...")
-    
+
     # Convertir numpy types a tipos nativos de Python
     def convert_numpy_types(obj):
         if isinstance(obj, np.integer):
@@ -443,12 +479,25 @@ def guardar_json(unified_data, filename='meps_2022_unified_reduced.json'):
         elif pd.isna(obj):
             return None
         return obj
-    
-    # Aplicar conversión recursivamente
+
+    # Eliminar campos 'icd10_code' y 'ccsr_category_1' de condiciones médicas
+    def clean_condiciones(lista):
+        return [
+            {k: v for k, v in cond.items() if k not in ('icd10_code', 'ccsr_category_1')}
+            for cond in lista
+        ]
+
+    # Aplicar conversión recursivamente y limpiar condiciones
     def clean_data(data):
         if isinstance(data, dict):
             # Eliminar el campo 'max_round_seguros' si existe
-            return {k: clean_data(v) for k, v in data.items() if k != 'max_round_seguros'}
+            d = {k: clean_data(v) for k, v in data.items() if k != 'max_round_seguros'}
+            # Limpiar condiciones médicas si existen
+            if 'condiciones_medicas_actuales' in d:
+                d['condiciones_medicas_actuales'] = clean_condiciones(d['condiciones_medicas_actuales'])
+            if 'condiciones_medicas_pasadas' in d:
+                d['condiciones_medicas_pasadas'] = clean_condiciones(d['condiciones_medicas_pasadas'])
+            return d
         elif isinstance(data, list):
             return [clean_data(item) for item in data]
         else:
@@ -458,11 +507,8 @@ def guardar_json(unified_data, filename='meps_2022_unified_reduced.json'):
 
     with open(filename, 'w', encoding='utf-8') as f:
         json.dump(clean_unified_data, f, ensure_ascii=False, indent=2)
-    
-    # Obtener tamaño del archivo
     file_size = os.path.getsize(filename) / (1024 * 1024)  # MB
     print(f"Archivo guardado: {filename} ({file_size:.2f} MB)")
-    
     return filename
 
 def main():
@@ -514,11 +560,18 @@ def main():
             print(f"ID de persona: {sample_person_id}")
             print(f"Edad: {sample_person['edad']}")
             print(f"Sexo: {sample_person['sexo']}")
-            print(f"Condiciones médicas: {len(sample_person['condiciones_medicas'])}")
+            total_condiciones = len(sample_person.get('condiciones_medicas_actuales', [])) + len(sample_person.get('condiciones_medicas_pasadas', []))
+            print(f"Condiciones médicas (total): {total_condiciones}")
+            print(f"Condiciones actuales: {len(sample_person.get('condiciones_medicas_actuales', []))}")
+            print(f"Condiciones pasadas: {len(sample_person.get('condiciones_medicas_pasadas', []))}")
+            print(f"Cantidad de lesiones: {sample_person.get('cantidad_lesiones', 0)}")
             print(f"Historial de empleo: {len(sample_person['historial_empleo'])}")
             print(f"Historial de seguro: {len(sample_person['historial_seguros'])}")
-            if sample_person['condiciones_medicas']:
-                print(f"Primera condición (descripcion_ccsr): {sample_person['condiciones_medicas'][0]['descripcion_ccsr']}")
+            # Mostrar primera condición si existe
+            if sample_person.get('condiciones_medicas_actuales'):
+                print(f"Primera condición actual (descripcion_ccsr): {sample_person['condiciones_medicas_actuales'][0]['descripcion_ccsr']}")
+            elif sample_person.get('condiciones_medicas_pasadas'):
+                print(f"Primera condición pasada (descripcion_ccsr): {sample_person['condiciones_medicas_pasadas'][0]['descripcion_ccsr']}")
         
     except Exception as e:
         print(f"❌ Error durante el proceso: {e}")
