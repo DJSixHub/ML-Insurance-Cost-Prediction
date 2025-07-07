@@ -3,21 +3,14 @@ import os
 import pandas as pd
 from collections import defaultdict
 
-# Ruta de entrada y salida
-INPUT_JSON = os.path.join('..', 'meps_2022_unified_reduced.json')
-OUTPUT_JSON = os.path.join('snapshots.json')
+
+# Ruta de entrada y salida (ajustada para que siempre apunte al archivo correcto)
+INPUT_JSON = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'meps_2022_unified_reduced.json'))
+OUTPUT_JSON = os.path.join(os.path.dirname(__file__), 'snapshots.json')
 
 # Rutas de archivos de referencia
-CCIR_FILE = os.path.join('..', 'data', 'info', 'CCIR_v2025-1.csv')
-CCSR_FILE = os.path.join('..', 'data', 'info', 'ccsr_reference_2025.csv')
-
-# Ruta de entrada y salida
-INPUT_JSON = os.path.join('..', 'meps_2022_unified_reduced.json')
-OUTPUT_JSON = os.path.join('snapshots.json')
-
-# Rutas de archivos de referencia
-CCIR_FILE = os.path.join('..', 'data', 'info', 'CCIR_v2025-1.csv')
-CCSR_FILE = os.path.join('..', 'data', 'info', 'ccsr_reference_2025.csv')
+CCIR_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data', 'info', 'CCIR_v2025-1.csv'))
+CCSR_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data', 'info', 'ccsr_reference_2025.csv'))
 
 def cargar_json(path):
     with open(path, 'r', encoding='utf-8') as f:

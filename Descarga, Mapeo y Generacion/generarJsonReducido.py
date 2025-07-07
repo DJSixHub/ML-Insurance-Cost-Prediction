@@ -245,7 +245,7 @@ def crear_json_unificado(df_demographics, df_conditions, df_jobs, df_insurance, 
                 
                 insurance_data = {
                     'cobertura_seguro': insurance_row.get('insurance_coverage', None),
-                    'prima_out_of_pocket': prima_value,
+                    # 'prima_out_of_pocket': prima_value,  # Eliminado del JSON final
                     'prima_out_of_pocket_editada': insurance_row.get('out_of_pocket_premium_edited', None),
                     'round_reportado': round_num
                 }
@@ -368,8 +368,8 @@ def crear_json_unificado(df_demographics, df_conditions, df_jobs, df_insurance, 
         # Verificar que al menos un registro tenga prima válida
         tiene_prima_valida = False
         for seguro in person_data['historial_seguros']:
-            prima = seguro.get('prima_out_of_pocket')
-            if prima is not None and prima != 'Inapplicable' and prima != '':
+            prima_editada = seguro.get('prima_out_of_pocket_editada')
+            if prima_editada is not None and prima_editada != 'Inapplicable' and prima_editada != '':
                 tiene_prima_valida = True
                 break
         
@@ -396,10 +396,24 @@ def generar_estadisticas(unified_data):
     personas_con_condiciones = sum(1 for person in unified_data.values() if person['condiciones_medicas'])
     personas_con_empleos = sum(1 for person in unified_data.values() if person['historial_empleo'])
     personas_con_seguros = sum(1 for person in unified_data.values() if person['historial_seguros'])
-    
+
     total_condiciones = sum(len(person['condiciones_medicas']) for person in unified_data.values())
     promedio_condiciones = total_condiciones / total_personas if total_personas > 0 else 0
-    
+
+    # Evitar división por cero en estadísticas
+    if total_personas == 0:
+        stats = {
+            'total_personas': 0,
+            'personas_con_condiciones': 0,
+            'personas_con_empleos': 0,
+            'personas_con_seguros': 0,
+            'total_condiciones': 0,
+            'promedio_condiciones': 0,
+            'porcentaje_con_condiciones': 0,
+        }
+        print("❌ No hay personas válidas en el dataset final. Revisa los filtros y la lógica de inclusión de primas.")
+        return stats
+
     stats = {
         'total_personas': total_personas,
         'personas_con_condiciones': personas_con_condiciones,
