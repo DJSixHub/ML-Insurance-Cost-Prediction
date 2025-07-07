@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Generador de JSON Reducido MEPS 2022
-Crea un dataset unificado con 10,000 personas seleccionadas al azar
+Crea un dataset unificado con personas seleccionadas al azar
 para análisis más rápido y prototipado.
 """
 
@@ -9,7 +9,7 @@ import json
 import pandas as pd
 import numpy as np
 import random
-from datetime import datetime
+import os
 
 def cargar_datos():
     """Cargar todos los datasets procesados"""
@@ -40,7 +40,6 @@ def cargar_datos():
     
     # Cargar archivo de referencia CCSR para mapeo de descripciones
     print("Cargando archivo de referencia CCSR...")
-    import os
     try:
         df_ccsr_ref = pd.read_csv(os.path.join('data', 'info', 'ccsr_reference_2025.csv'))
         print(f"✓ Archivo CCSR cargado con {len(df_ccsr_ref)} registros")
@@ -48,16 +47,7 @@ def cargar_datos():
         print("⚠️  No se encontró el archivo CCSR de referencia")
         df_ccsr_ref = None
     
-    # Cargar archivo CCIR para identificar enfermedades crónicas
-    print("Cargando archivo CCIR para enfermedades crónicas...")
-    try:
-        df_ccir = pd.read_csv(os.path.join('data', 'info', 'CCIR_v2025-1.csv'))
-        print(f"✓ Archivo CCIR cargado con {len(df_ccir)} registros")
-    except FileNotFoundError:
-        print("⚠️  No se encontró el archivo CCIR")
-        df_ccir = None
-    
-    return df_demographics, df_conditions, df_jobs, df_insurance, df_ccsr_ref, df_ccir
+    return df_demographics, df_conditions, df_jobs, df_insurance, df_ccsr_ref
 
 def seleccionar_muestra_aleatoria(df_demographics, df_insurance, sample_size=10000):
     """Seleccionar una muestra aleatoria de personas con historial de seguros válido"""
@@ -98,7 +88,7 @@ def seleccionar_muestra_aleatoria(df_demographics, df_insurance, sample_size=100
     print(f"✓ Seleccionadas {len(selected_ids)} personas válidas")
     return selected_ids
 
-def filtrar_datos_por_muestra(df_demographics, df_conditions, df_jobs, df_insurance, df_ccsr_ref, df_ccir, selected_ids):
+def filtrar_datos_por_muestra(df_demographics, df_conditions, df_jobs, df_insurance, df_ccsr_ref, selected_ids):
     """Filtrar todos los datasets para incluir solo las personas seleccionadas"""
     print("Filtrando datos para la muestra seleccionada...")
     
@@ -112,23 +102,15 @@ def filtrar_datos_por_muestra(df_demographics, df_conditions, df_jobs, df_insura
     if df_ccsr_ref is not None:
         print("Aplicando mapeo de descripciones ICD10 y CCSR...")
         
-        # Crear mapeo de ICD10 a descripción (manejar códigos truncados)
+        # Crear mapeo de ICD10 a descripción
         icd10_map = {}
-        icd10_prefix_map = {}  # Para códigos truncados
         
         for _, row in df_ccsr_ref.iterrows():
             icd10_code = row['ICD-10-CM Code']
             icd10_desc = row['ICD-10-CM Code Description']
             if pd.notna(icd10_code) and pd.notna(icd10_desc):
-                # Mapeo exacto
                 if icd10_code not in icd10_map:
                     icd10_map[icd10_code] = icd10_desc
-                
-                # Mapeo por prefijo (para códigos truncados)
-                # Tomar solo los primeros 3 caracteres como prefijo
-                prefix = icd10_code[:3]
-                if prefix not in icd10_prefix_map:
-                    icd10_prefix_map[prefix] = icd10_desc
         
         # Crear mapeo de CCSR a descripción (manejar duplicados tomando el primero)
         ccsr_map = {}
@@ -186,11 +168,9 @@ def filtrar_datos_por_muestra(df_demographics, df_conditions, df_jobs, df_insura
             icd10_code = row['icd10_code']
             ccsr_category = row['ccsr_category_1']
             
-            # Si hay código ICD10, intentar usar descripción genérica
             if pd.notna(icd10_code):
                 return "Condición médica no especificada"
             
-            # Si no hay ICD10 pero hay CCSR, usar descripción genérica
             if pd.notna(ccsr_category):
                 return "Categoría médica no especificada"
             
@@ -215,299 +195,7 @@ def filtrar_datos_por_muestra(df_demographics, df_conditions, df_jobs, df_insura
     
     return df_demo_filtered, df_cond_filtered, df_jobs_filtered, df_insurance_filtered
 
-def identificar_y_replicar_cronicas(unified_data, df_conditions, df_ccsr_ref, df_ccir):
-    """Identificar condiciones crónicas y replicarlas en rounds posteriores"""
-    if df_ccir is None or df_ccsr_ref is None:
-        print("⚠️  No se pueden procesar condiciones crónicas sin archivos CCIR o CCSR")
-        return unified_data
-    
-    print("Identificando y replicando condiciones crónicas...")
-    
-    # Debug: Verificar condiciones específicas
-    condiciones_test = ["Essential hypertension", "Diabetes mellitus without complication"]
-    
-    # Crear mapeo de ICD10 a indicador crónico desde CCIR
-    # Los códigos en CCIR están entre comillas simples: 'A000', los removemos
-    # También los nombres de columnas tienen comillas
-    ccir_chronic_map = {}
-    print(f"Columnas en CCIR: {list(df_ccir.columns)}")
-    
-    # Intentar diferentes nombres de columnas por si tienen comillas
-    icd_col = None
-    chronic_col = None
-    
-    for col in df_ccir.columns:
-        col_clean = str(col).strip("'\"")
-        if 'ICD-10-CM CODE' in col_clean:
-            icd_col = col
-        elif 'CHRONIC INDICATOR' in col_clean:
-            chronic_col = col
-    
-    print(f"Columna ICD encontrada: {icd_col}")
-    print(f"Columna CHRONIC encontrada: {chronic_col}")
-    
-    if icd_col is not None and chronic_col is not None:
-        for _, row in df_ccir.iterrows():
-            icd10_code = str(row.get(icd_col, '')).strip("'\"")
-            chronic_indicator = row.get(chronic_col, 0)
-            if pd.notna(icd10_code) and icd10_code:
-                ccir_chronic_map[icd10_code] = int(chronic_indicator) == 1
-    
-    print(f"✓ Mapeo CCIR creado con {len(ccir_chronic_map)} códigos ICD10")
-    
-    # Debug: Mostrar algunos ejemplos del mapeo CCIR
-    if len(ccir_chronic_map) > 0:
-        ejemplos_ccir = list(ccir_chronic_map.items())[:5]
-        print(f"   Ejemplos CCIR: {ejemplos_ccir}")
-    else:
-        print("   ⚠️ No se creó mapeo CCIR - revisar formato de archivo")
-    
-    # Crear mapeo de CCSR description a códigos ICD10 desde CCSR reference
-    # Los códigos en CCSR reference NO tienen comillas: A000
-    ccsr_to_icd10_map = {}
-    for _, row in df_ccsr_ref.iterrows():
-        ccsr_desc = row.get('CCSR Category Description', '')
-        icd10_code = row.get('ICD-10-CM Code', '')  # Sin comillas en CCSR reference
-        if pd.notna(ccsr_desc) and pd.notna(icd10_code) and ccsr_desc and icd10_code:
-            if ccsr_desc not in ccsr_to_icd10_map:
-                ccsr_to_icd10_map[ccsr_desc] = set()
-            ccsr_to_icd10_map[ccsr_desc].add(str(icd10_code))  # Asegurar que sea string
-    
-    print(f"✓ Mapeo CCSR a ICD10 creado con {len(ccsr_to_icd10_map)} descripciones")
-    
-    # Debug: Verificar condiciones específicas paso a paso
-    for condicion_test in condiciones_test:
-        print(f"\n🔍 Verificando: {condicion_test}")
-        
-        # PASO 1: Buscar en CCSR reference
-        icd10_codes = ccsr_to_icd10_map.get(condicion_test, set())
-        print(f"   PASO 1 - Códigos ICD10 en CCSR: {list(icd10_codes)[:5]}...")
-        
-        if icd10_codes:
-            # PASO 2: Verificar cada código en CCIR
-            cronicas_encontradas = []
-            for icd10_code in list(icd10_codes)[:3]:  # Solo revisar los primeros 3
-                esta_en_ccir = icd10_code in ccir_chronic_map
-                es_cronico = ccir_chronic_map.get(icd10_code, False)
-                print(f"   PASO 2 - {icd10_code}: en CCIR={esta_en_ccir}, crónico={es_cronico}")
-                if es_cronico:
-                    cronicas_encontradas.append(icd10_code)
-            
-            print(f"   RESULTADO - Códigos crónicos: {cronicas_encontradas}")
-        else:
-            print(f"   ⚠️ No se encontraron códigos ICD10 para esta descripción CCSR")
-    
-    # Crear mapeo de ICD10 a indicador crónico desde CCIR
-    # Los códigos en CCIR están entre comillas simples: 'A000', los removemos
-    ccir_chronic_map = {}
-    for _, row in df_ccir.iterrows():
-        icd10_code = str(row.get('ICD-10-CM CODE', '')).strip("'\"")
-        chronic_indicator = row.get('CHRONIC INDICATOR', 0)
-        if pd.notna(icd10_code) and icd10_code:
-            ccir_chronic_map[icd10_code] = int(chronic_indicator) == 1
-    
-    print(f"✓ Mapeo CCIR creado con {len(ccir_chronic_map)} códigos ICD10")
-    
-    # Debug: Mostrar algunos ejemplos del mapeo CCIR
-    if len(ccir_chronic_map) > 0:
-        ejemplos_ccir = list(ccir_chronic_map.items())[:5]
-        print(f"   Ejemplos CCIR: {ejemplos_ccir}")
-        
-        # Contar códigos crónicos
-        cronicos_count = sum(1 for is_chronic in ccir_chronic_map.values() if is_chronic)
-        print(f"   Códigos crónicos encontrados: {cronicos_count}")
-    else:
-        print("   ⚠️ No se creó mapeo CCIR - revisar formato de archivo")
-    
-    # Crear mapeo de CCSR description a códigos ICD10 desde CCSR reference
-    # Los códigos en CCSR reference NO tienen comillas: A000
-    ccsr_to_icd10_map = {}
-    for _, row in df_ccsr_ref.iterrows():
-        ccsr_desc = row.get('CCSR Category Description', '')
-        icd10_code = row.get('ICD-10-CM Code', '')  # Sin comillas en CCSR reference
-        if pd.notna(ccsr_desc) and pd.notna(icd10_code) and ccsr_desc and icd10_code:
-            if ccsr_desc not in ccsr_to_icd10_map:
-                ccsr_to_icd10_map[ccsr_desc] = set()
-            ccsr_to_icd10_map[ccsr_desc].add(icd10_code)
-    
-    print(f"✓ Mapeo CCSR creado con {len(ccsr_to_icd10_map)} descripciones CCSR")
-    
-    # Debug: Verificar mapeo para condiciones específicas
-    condiciones_test = ['Essential hypertension', 'Diabetes mellitus without complication']
-    
-    for condicion_test in condiciones_test:
-        print(f"\n🔍 Verificando: {condicion_test}")
-        
-        # PASO 1: Buscar en CCSR reference
-        icd10_codes = ccsr_to_icd10_map.get(condicion_test, set())
-        print(f"   PASO 1 - Códigos ICD10 en CCSR: {list(icd10_codes)[:5]}...")
-        
-        if icd10_codes:
-            # PASO 2: Verificar cada código en CCIR
-            cronicas_encontradas = []
-            for icd10_code in list(icd10_codes)[:3]:  # Solo revisar los primeros 3
-                esta_en_ccir = icd10_code in ccir_chronic_map
-                es_cronico = ccir_chronic_map.get(icd10_code, False)
-                print(f"   PASO 2 - {icd10_code}: en CCIR={esta_en_ccir}, crónico={es_cronico}")
-                if es_cronico:
-                    cronicas_encontradas.append(icd10_code)
-            
-            print(f"   RESULTADO - Códigos crónicos: {cronicas_encontradas}")
-        else:
-            print(f"   ⚠️ No se encontraron códigos ICD10 para esta descripción CCSR")
-    
-    # Crear mapeo de CCSR description a códigos ICD10 desde CCSR reference
-    ccsr_to_icd10_map = {}
-    for _, row in df_ccsr_ref.iterrows():
-        ccsr_desc = row.get('CCSR Category Description', '')
-        icd10_code = row.get('ICD-10-CM Code', '')
-        if pd.notna(ccsr_desc) and pd.notna(icd10_code) and ccsr_desc and icd10_code:
-            if ccsr_desc not in ccsr_to_icd10_map:
-                ccsr_to_icd10_map[ccsr_desc] = set()
-            ccsr_to_icd10_map[ccsr_desc].add(icd10_code)
-    
-    print(f"✓ Mapeo CCSR a ICD10 creado con {len(ccsr_to_icd10_map)} descripciones")
-    
-    # Función para verificar si una condición es crónica
-    def es_condicion_cronica(descripcion_ccsr):
-        if not descripcion_ccsr or descripcion_ccsr == "No especificado":
-            return False
-        
-        # PASO 1: Buscar descripción CCSR en ccsr_reference
-        # Buscar códigos ICD10 asociados a esta descripción CCSR
-        icd10_codes = ccsr_to_icd10_map.get(descripcion_ccsr, set())
-        
-        if not icd10_codes:
-            return False
-        
-        # PASO 2: Para cada código ICD10, buscar en CCIR
-        # PASO 3: Verificar si alguno tiene CHRONIC INDICATOR = 1
-        for icd10_code in icd10_codes:
-            if ccir_chronic_map.get(icd10_code, False):
-                return True
-        
-        return False
-    
-    condiciones_cronicas_identificadas = set()
-    condiciones_replicadas = 0
-    
-    # Procesar cada persona
-    for person_id, person_data in unified_data.items():
-        condiciones = person_data['condiciones_medicas']
-        if not condiciones:
-            continue
-        
-        # Obtener todos los rounds válidos (tanto de seguros como de condiciones médicas)
-        rounds_validos = set()
-        
-        # Rounds de seguros
-        for seguro in person_data['historial_seguros']:
-            round_seg = seguro.get('round_reportado')
-            if round_seg is not None and pd.notna(round_seg):
-                try:
-                    rounds_validos.add(int(round_seg))
-                except (ValueError, TypeError):
-                    pass
-        
-        # Rounds de condiciones médicas
-        for condicion in condiciones:
-            round_cond = condicion.get('round_reportado')
-            if round_cond is not None and pd.notna(round_cond):
-                try:
-                    rounds_validos.add(int(round_cond))
-                except (ValueError, TypeError):
-                    pass
-        
-        if not rounds_validos:
-            continue
-        
-        rounds_validos = sorted(rounds_validos)
-        
-        # Identificar condiciones crónicas existentes y sus rounds de diagnóstico
-        condiciones_cronicas_diagnosticadas = {}
-        
-        for condicion in condiciones:
-            descripcion_ccsr = condicion.get('descripcion_ccsr')
-            round_cond = condicion.get('round_reportado')
-            
-            if not descripcion_ccsr or round_cond is None:
-                continue
-            
-            try:
-                round_cond_int = int(round_cond)
-            except (ValueError, TypeError):
-                continue
-            
-            # Verificar si es crónica
-            if es_condicion_cronica(descripcion_ccsr):
-                condiciones_cronicas_identificadas.add(descripcion_ccsr)
-                
-                # Guardar la condición crónica con su round de diagnóstico más temprano
-                if descripcion_ccsr not in condiciones_cronicas_diagnosticadas:
-                    condiciones_cronicas_diagnosticadas[descripcion_ccsr] = {
-                        'round_diagnostico': round_cond_int,
-                        'condicion_original': condicion
-                    }
-                else:
-                    # Si ya existe, mantener el round más temprano
-                    if round_cond_int < condiciones_cronicas_diagnosticadas[descripcion_ccsr]['round_diagnostico']:
-                        condiciones_cronicas_diagnosticadas[descripcion_ccsr] = {
-                            'round_diagnostico': round_cond_int,
-                            'condicion_original': condicion
-                        }
-        
-        # Replicar condiciones crónicas en todos los rounds posteriores
-        condiciones_a_agregar = []
-        
-        # Debug para este caso específico
-        debug_persona = False
-        if condiciones_cronicas_diagnosticadas and rounds_validos:
-            debug_persona = True
-            print(f"\n🔍 Debug persona {person_id[:8]}...")
-            print(f"   Rounds válidos: {rounds_validos}")
-            print(f"   Condiciones crónicas diagnosticadas: {list(condiciones_cronicas_diagnosticadas.keys())}")
-        
-        for descripcion_ccsr, info_cronica in condiciones_cronicas_diagnosticadas.items():
-            round_diagnostico = info_cronica['round_diagnostico']
-            condicion_original = info_cronica['condicion_original']
-            
-            if debug_persona:
-                print(f"   🏥 {descripcion_ccsr} (diagnosticada en round {round_diagnostico})")
-            
-            # Para cada round válido posterior al diagnóstico
-            for round_valido in rounds_validos:
-                if round_valido > round_diagnostico:
-                    # Verificar si ya existe esta condición en este round específico
-                    ya_existe = any(
-                        c.get('descripcion_ccsr') == descripcion_ccsr and 
-                        str(c.get('round_reportado')) == str(round_valido)
-                        for c in condiciones
-                    )
-                    
-                    if debug_persona:
-                        print(f"     Round {round_valido}: {'Ya existe' if ya_existe else 'Agregando'}")
-                    
-                    if not ya_existe:
-                        # Crear una copia de la condición para el nuevo round
-                        condicion_replicada = condicion_original.copy()
-                        condicion_replicada['round_reportado'] = round_valido
-                        condiciones_a_agregar.append(condicion_replicada)
-                        condiciones_replicadas += 1
-        
-        # Agregar las condiciones replicadas
-        person_data['condiciones_medicas'].extend(condiciones_a_agregar)
-    
-    print(f"✓ Condiciones crónicas identificadas: {len(condiciones_cronicas_identificadas)}")
-    print(f"✓ Condiciones replicadas en rounds posteriores: {condiciones_replicadas}")
-    
-    if condiciones_cronicas_identificadas:
-        print("✓ Condiciones crónicas encontradas:")
-        for condicion in sorted(condiciones_cronicas_identificadas):
-            print(f"   - {condicion}")
-    
-    return unified_data
-
-def crear_json_unificado(df_demographics, df_conditions, df_jobs, df_insurance, df_ccsr_ref, df_ccir):
+def crear_json_unificado(df_demographics, df_conditions, df_jobs, df_insurance, df_ccsr_ref):
     """Crear el JSON unificado con una entrada por persona"""
     print("Creando JSON unificado...")
     
@@ -572,7 +260,7 @@ def crear_json_unificado(df_demographics, df_conditions, df_jobs, df_insurance, 
                         if round_num_int > unified_data[person_id]['max_round_seguros']:
                             unified_data[person_id]['max_round_seguros'] = round_num_int
                     except (ValueError, TypeError):
-                        pass  # Ignorar rounds que no se pueden convertir a int
+                        pass
             else:
                 insurance_counts['inapplicable_skipped'] += 1
             
@@ -602,11 +290,10 @@ def crear_json_unificado(df_demographics, df_conditions, df_jobs, df_insurance, 
                         should_include = False
                         condition_counts['filtered_by_round'] += 1
                 except (ValueError, TypeError):
-                    pass  # Si no se puede convertir, incluir el registro
+                    pass
             
             if should_include:
                 condition_data = {
-                    # 'descripcion_icd10' se omite
                     'descripcion_ccsr': condition_row.get('ccsr_description', None),
                     'edad_diagnostico': condition_row.get('age_at_diagnosis', None),
                     'es_lesion': condition_row.get('injury_flag', None),
@@ -639,7 +326,7 @@ def crear_json_unificado(df_demographics, df_conditions, df_jobs, df_insurance, 
                         should_include = False
                         job_counts['filtered_by_round'] += 1
                 except (ValueError, TypeError):
-                    pass  # Si no se puede convertir, incluir el registro
+                    pass
             
             if should_include:
                 job_data = {
@@ -651,7 +338,7 @@ def crear_json_unificado(df_demographics, df_conditions, df_jobs, df_insurance, 
                     'round_reportado': job_row.get('round_number', None)
                 }
                 
-                # Añadir directamente sin deduplicación
+                # Añadir directamente
                 unified_data[person_id]['historial_empleo'].append(job_data)
             
             job_counts['total_processed'] += 1
@@ -698,9 +385,6 @@ def crear_json_unificado(df_demographics, df_conditions, df_jobs, df_insurance, 
         print(f"✓ Total final de personas: {len(unified_data)}")
     else:
         print("✓ Todas las personas tienen al menos un registro de prima válida")
-    
-    # Identificar y replicar condiciones crónicas después de construir el JSON
-    unified_data = identificar_y_replicar_cronicas(unified_data, df_conditions, df_ccsr_ref, df_ccir)
     
     return unified_data
 
@@ -762,7 +446,6 @@ def guardar_json(unified_data, filename='meps_2022_unified_reduced.json'):
         json.dump(clean_unified_data, f, ensure_ascii=False, indent=2)
     
     # Obtener tamaño del archivo
-    import os
     file_size = os.path.getsize(filename) / (1024 * 1024)  # MB
     print(f"Archivo guardado: {filename} ({file_size:.2f} MB)")
     
@@ -776,19 +459,19 @@ def main():
     
     try:
         # Cargar datos
-        df_demographics, df_conditions, df_jobs, df_insurance, df_ccsr_ref, df_ccir = cargar_datos()
+        df_demographics, df_conditions, df_jobs, df_insurance, df_ccsr_ref = cargar_datos()
         
         # Seleccionar muestra aleatoria con filtro estricto
         selected_ids = seleccionar_muestra_aleatoria(df_demographics, df_insurance, sample_size=21000)
         
         # Filtrar datos
         df_demo_filtered, df_cond_filtered, df_jobs_filtered, df_insurance_filtered = filtrar_datos_por_muestra(
-            df_demographics, df_conditions, df_jobs, df_insurance, df_ccsr_ref, df_ccir, selected_ids
+            df_demographics, df_conditions, df_jobs, df_insurance, df_ccsr_ref, selected_ids
         )
         
         # Crear JSON unificado
         unified_data = crear_json_unificado(
-            df_demo_filtered, df_cond_filtered, df_jobs_filtered, df_insurance_filtered, df_ccsr_ref, df_ccir
+            df_demo_filtered, df_cond_filtered, df_jobs_filtered, df_insurance_filtered, df_ccsr_ref
         )
         
         # Generar estadísticas
