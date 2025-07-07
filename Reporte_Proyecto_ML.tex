@@ -35,7 +35,7 @@
 \maketitle
 
 \section*{Descripción del problema}
-El objetivo de este trabajo es predecir, a partir de características personales y de salud de los individuos, el coste de la prima ``out of pocket'' de su seguro médico utilizando técnicas de aprendizaje automático. Se busca estimar, para cada persona, el rango de valores que sería razonable pagar por su seguro, en función de lo que pagan personas con características similares.
+El objetivo de este trabajo es predecir, a partir de características personales y de salud de los individuos, el coste de la prima ``out of pocket'' de su seguro médico utilizando técnicas de aprendizaje automático.
 
 \section*{Origen y descripción de los datos}
 Los datos utilizados provienen de tres fuentes principales: el Medical Expenditure Panel Survey (MEPS), el Clinical Classifications Software Refined (CCSR) y el Crosswalk for Clinical Information Reporting (CCIR).
@@ -46,11 +46,131 @@ Los datos utilizados provienen de tres fuentes principales: el Medical Expenditu
     \item \textbf{CCIR}: Tabla de correspondencia que permite mapear códigos y categorías clínicas entre diferentes sistemas de clasificación.
 \end{itemize}
 
-Los datos originales se encontraban en archivos CSV ubicados en la carpeta \texttt{raw}. Entre las columnas presentes en estos archivos se incluyen identificadores de persona, edad, sexo, raza/etnia, estado civil, región, condiciones de salud codificadas, y variables relacionadas con el seguro y los gastos médicos.
 
-\section*{Procesamiento y mapeo de los datos}
-Para mejorar la interpretabilidad, los nombres de las variables fueron mapeados a descripciones más explícitas utilizando los archivos de usuario SAS provistos por MEPS (archivos .txt). Posteriormente, se construyó un archivo JSON unificado (\texttt{meps2022\_unified\_reduced.json}) que integra la información relevante de los distintos archivos procesados.
 
-La estructura del JSON unificado contiene, para cada individuo, las variables personales, demográficas y de salud, así como la información de gastos y seguro. Algunas variables originales fueron omitidas en la construcción del JSON final por carecer de relevancia directa para la predicción de la prima o por contener información redundante o incompleta. Esta selección se realizó para optimizar la calidad y utilidad del dataset final para el modelado predictivo.
+
+\section*{Primer procesamiento y mapeo de los datos}
+
+Se implementó una función de mapeo para convertir las columnas de los archivos CSV originales en nombres más entendibles y descriptivos, utilizando los archivos de usuario SAS provistos por MEPS (archivos .txt). Además, se realizó un análisis exploratorio de los datos, cuyos resultados principales se resumen en la siguiente tabla:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Indicador} & \textbf{Valor} \\
+\midrule
+\multicolumn{2}{l}{\textbf{Demografía (fyc)}} \\
+Columnas disponibles & dwelling\_unit\_id, person\_id, person\_unique\_id, panel\_number, age\_last\_birthday, sex, race\_ethnicity, \\ 
+ & marital\_status\_2022, region\_2022, total\_healthcare\_exp\_2022, total\_out\_of\_pocket\_exp\_2022, \\ 
+ & poverty\_category\_2022, insurance\_coverage\_2022, perceived\_health\_status, person\_weight\_2022 \\
+Edad (mín, máx, Q1, Q3, media, mediana) & 0.0, 85.0, 23.0, 64.0, 43.56, 45.0 \\
+\midrule
+Cantidad de personas por raza &  \\
+\quad Non-Hispanic White only & 12211 \\
+\quad Hispanic & 4883 \\
+\quad Non-Hispanic Black only & 3244 \\
+\quad Non-Hispanic Asian only & 1220 \\
+\quad Non-Hispanic Other/multi-race & 873 \\
+\midrule
+Cantidad de personas por estado civil &  \\
+\quad Married & 8602 \\
+\quad Never married & 5495 \\
+\quad Under 16 - not applicable & 3765 \\
+\quad Divorced & 2546 \\
+\quad Widowed & 1619 \\
+\quad Separated & 397 \\
+\quad -7 & 6 \\
+\quad -8 & 1 \\
+\midrule
+Cantidad de personas por región &  \\
+\quad South & 8602 \\
+\quad West & 5693 \\
+\quad Midwest & 4498 \\
+\quad Northeast & 3443 \\
+\quad Inapplicable & 195 \\
+\midrule
+Cantidad de personas por categoría de pobreza &  \\
+\quad High income & 8282 \\
+\quad Middle income & 6269 \\
+\quad Poor/negative & 3725 \\
+\quad Low income & 3105 \\
+\quad Near poor & 1050 \\
+\midrule
+Cantidad de personas individuales & 22431 \\
+\midrule
+\multicolumn{2}{l}{\textbf{Condiciones médicas (cond)}} \\
+Columnas disponibles & person\_unique\_id, condition\_id, panel\_number, condition\_round, age\_at\_diagnosis, injury\_flag, icd10\_code, ccsr\_category\_1 \\
+Condiciones médicas distintas & 206 \\
+Media de condiciones por persona & 4.80 \\
+Top 5 condiciones más comunes &  \\
+\quad CIR007 & 5391 \\
+\quad END010 & 4268 \\
+\quad MUS010 & 3061 \\
+\quad END002 & 2334 \\
+\quad MBD005 & 2158 \\
+\midrule
+\multicolumn{2}{l}{\textbf{Primas y pagos (prpl)}} \\
+Estadísticas out\_of\_pocket\_premium\_edited & mín: 0.0, máx: 4583.33, media: 306.68, mediana: 212.5, Q1: 70.0, Q3: 433.33 \\
+Cantidad de valores válidos & 13075 \\
+\midrule
+\multicolumn{2}{l}{\textbf{Empleo (jobs)}} \\
+Estadísticas hours\_per\_week & mín: 1.0, máx: 168.0, media: 35.83, mediana: 40.0, Q1: 30.0, Q3: 40.0, válidos: 36126 \\
+Estadísticas hourly\_wage & mín: 0.0, máx: 115.0, media: 20.65, mediana: 18.0, Q1: 15.0, Q3: 24.0, válidos: 13522 \\
+\bottomrule
+\end{tabular}
+
+\caption{Resumen de los principales resultados del análisis exploratorio de los datos procesados.}
+\end{table}
+
+\vspace{1em}
+\noindent
+\textbf{Columnas disponibles en los datasets:}
+
+\begin{itemize}
+    \item \textbf{Condiciones médicas (cond):} person\_unique\_id, condition\_id, panel\_number, condition\_round, age\_at\_diagnosis, injury\_flag, icd10\_code, ccsr\_category\_1
+    \item \textbf{Características personales y demográficas (fyc):} dwelling\_unit\_id, person\_id, person\_unique\_id, panel\_number, age\_last\_birthday, sex, race\_ethnicity, marital\_status\_2022, region\_2022, total\_healthcare\_exp\_2022, total\_out\_of\_pocket\_exp\_2022, poverty\_category\_2022, insurance\_coverage\_2022, perceived\_health\_status, person\_weight\_2022
+    \item \textbf{Empleo (jobs):} person\_unique\_id, job\_id, panel\_number, round\_number, insurance\_offered, temporary\_job, salaried\_employee, hourly\_wage, hours\_per\_week
+    \item \textbf{Historial de seguros (prpl):} person\_unique\_id, panel\_number, round\_number, insurance\_coverage, out\_of\_pocket\_premium, out\_of\_pocket\_premium\_edited
+\end{itemize}
+
+No todas estas columnas ofrecían información relevante para el objetivo del trabajo. Para facilitar el análisis y la integración de la información, se decidió crear un archivo JSON unificado por persona, con la siguiente estructura anidada de campos principales:
+
+\begin{verbatim}
+{
+  "edad": ,
+  "sexo": ,
+  "raza_etnicidad": ,
+  "estado_civil": ,
+  "region": ,
+  "categoria_pobreza": ,
+  "cobertura_seguro": ,
+  "estado_salud_percibido": ,
+  "condiciones_medicas_actuales": [
+    {
+      "descripcion_ccsr": ,
+      "edad_diagnostico": 
+    },
+    ...
+  ],
+  "condiciones_medicas_pasadas": [],
+  "historial_empleo": [
+    {
+      "seguro_ofrecido": ,
+      "trabajo_temporal": ,
+      "empleado_asalariado": ,
+      "salario_por_hora": ,
+      "horas_por_semana": 
+    },
+    ...
+  ],
+  "historial_seguros": [
+    {
+      "cobertura_seguro": ,
+      "prima_out_of_pocket_editada": 
+    },
+    ...
+  ]
+}
+\end{verbatim}
 
 \end{document}
