@@ -26,72 +26,31 @@
 \titleformat{\subsection}
 {\normalfont\large\bfseries}{\thesubsection}{1em}{}
 
-\title{
-\textbf{Predicción de Primas de Seguro Médico con Machine Learning}\\
-\large{Síntesis y análisis del Medical Expenditure Panel Survey (MEPS) 2022}
-}
-
-\author{
-Diego Puentes\\
-Universidad Nacional de Colombia\\
-Ciencia de Datos
-}
-
+\title{Predicción personalizada de primas de seguro médico usando Machine Learning}
+\author{Diego Puentes, Universidad de La Habana}
 \date{Julio 2025}
 
 \begin{document}
 
 \maketitle
 
-\newpage
+\section*{Descripción del problema}
+El objetivo de este trabajo es predecir, a partir de características personales y de salud de los individuos, el coste de la prima ``out of pocket'' de su seguro médico utilizando técnicas de aprendizaje automático. Se busca estimar, para cada persona, el rango de valores que sería razonable pagar por su seguro, en función de lo que pagan personas con características similares.
 
-\tableofcontents
+\section*{Origen y descripción de los datos}
+Los datos utilizados provienen de tres fuentes principales: el Medical Expenditure Panel Survey (MEPS), el Clinical Classifications Software Refined (CCSR) y el Crosswalk for Clinical Information Reporting (CCIR).
 
-\newpage
-
-\section{Introducción}
-
-El acceso y costo del seguro médico en Estados Unidos es un reto social y económico. Predecir las primas y gastos médicos individuales permite a aseguradoras y usuarios tomar mejores decisiones y optimizar recursos. Este proyecto utiliza datos reales del MEPS 2022 para construir modelos de predicción de primas, empleando solo variables observadas y evitando campos artificiales.
-
-\subsection{Problema y Objetivo}
-
-¿Cómo predecir de forma precisa la prima de seguro médico de una persona usando sus características demográficas, condiciones de salud reales, historial laboral y de seguros? El objetivo es construir un pipeline reproducible de limpieza, integración, análisis y modelado, identificando las variables más relevantes y evaluando el poder predictivo de distintos enfoques.
-
-\subsection{Resumen del enfoque}
-
-Se integraron y limpiaron los datos de MEPS 2022, mapeando condiciones médicas a categorías clínicas (CCSR) de forma dinámica y evitando duplicados. Se eliminaron campos inventados y se automatizó la imputación de variables clave. El análisis exploratorio identificó la importancia de variables y la distribución de la variable objetivo. Se probaron modelos lineales y de ensamble, evaluando el impacto de la transformación logarítmica en la predicción.
-
-\subsection{Datos y procesamiento}
-
-Se usaron los archivos públicos de MEPS 2022: datos demográficos, condiciones médicas (ICD-10), historial laboral y seguros. El mapeo de condiciones a CCSR se realizó con referencia oficial, permitiendo agrupar enfermedades de forma clínica y reducir la dimensionalidad. El pipeline automatiza la limpieza, integración y validación, generando un dataset unificado y listo para análisis.
-
-\section{Metodología}
-
-\subsection{Procesamiento y selección de variables}
-
-El pipeline filtra personas con peso inválido y primas fuera de rango, elimina duplicados y campos administrativos, y selecciona solo variables observadas: demográficas, socioeconómicas, laborales, de seguros y condiciones médicas agrupadas. El conteo de enfermedades crónicas se realiza dinámicamente usando el mapeo CCSR y el flag de cronicidad, evitando listas fijas y duplicados por persona.
-
-\subsection{Estructura y características del dataset}
-
-El dataset final contiene más de 11,800 personas, con información demográfica, médica (condiciones CCSR, número de crónicas únicas), laboral y de seguros. Se mantiene la estructura longitudinal de MEPS, permitiendo análisis temporales y modelado robusto. El formato JSON facilita la manipulación y análisis en Python.
-
-% ...se omiten tablas y se sintetiza la descripción...
-
-\section{Análisis exploratorio y modelado}
-
-Se realizó un análisis exhaustivo de nulos, outliers, variables categóricas y distribución de la variable objetivo. Se imputó el estado de salud percibido usando árboles de decisión y reglas claras. Se analizaron la importancia de variables y la distribución de primas en escala lineal y logarítmica.
-
-Se probaron modelos lineales, Random Forest y KNN, mostrando bajo poder predictivo absoluto, pero mejoría al transformar la variable objetivo. La importancia de variables resalta el peso de edad, número de crónicas y estado de salud percibido.
-
-\section{Conclusiones}
-
-El pipeline desarrollado permite predecir primas de seguro médico usando solo variables reales y observadas, con un proceso reproducible y transparente. La integración dinámica de condiciones crónicas y la automatización de la limpieza e imputación mejoran la calidad del dataset. Aunque el poder predictivo es limitado, el análisis aporta claridad sobre los factores que más inciden en el costo del seguro médico en la población estadounidense.
-
-\vspace{1em}
-\textbf{Diego Puentes -- Ciencia de Datos, Julio 2025}
-
-\end{document}
-    \item \textbf{Rango temporal:} 9 rounds de recolección de datos
+\begin{itemize}
+    \item \textbf{MEPS}: Encuesta nacional de gastos médicos en Estados Unidos, que recopila información detallada sobre el uso de servicios de salud, gastos y seguros médicos de la población.
+    \item \textbf{CCSR}: Herramienta de clasificación que agrupa diagnósticos clínicos de acuerdo a códigos ICD-10, facilitando el análisis de condiciones de salud.
+    \item \textbf{CCIR}: Tabla de correspondencia que permite mapear códigos y categorías clínicas entre diferentes sistemas de clasificación.
 \end{itemize}
+
+Los datos originales se encontraban en archivos CSV ubicados en la carpeta \texttt{raw}. Entre las columnas presentes en estos archivos se incluyen identificadores de persona, edad, sexo, raza/etnia, estado civil, región, condiciones de salud codificadas, y variables relacionadas con el seguro y los gastos médicos.
+
+\section*{Procesamiento y mapeo de los datos}
+Para mejorar la interpretabilidad, los nombres de las variables fueron mapeados a descripciones más explícitas utilizando los archivos de usuario SAS provistos por MEPS (archivos .txt). Posteriormente, se construyó un archivo JSON unificado (\texttt{meps2022\_unified\_reduced.json}) que integra la información relevante de los distintos archivos procesados.
+
+La estructura del JSON unificado contiene, para cada individuo, las variables personales, demográficas y de salud, así como la información de gastos y seguro. Algunas variables originales fueron omitidas en la construcción del JSON final por carecer de relevancia directa para la predicción de la prima o por contener información redundante o incompleta. Esta selección se realizó para optimizar la calidad y utilidad del dataset final para el modelado predictivo.
 
 \end{document}
