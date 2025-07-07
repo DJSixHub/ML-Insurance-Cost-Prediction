@@ -1,0 +1,774 @@
+SAS User File for H242 Data                                                                   
+                                                                                                    
+This file contains information and sample SAS programs to create a permanent                        
+SAS dataset for users who want to use SAS in processing the MEPS data                               
+provided in this PUF release.                                                                       
+                                                                                                    
+There are two ways to create a permanent SAS dataset, using either the SAS                          
+transport data file (H242.SSP) or the ASCII data file (H242.DAT)                        
+supplied in this PUF release. Section A provides a sample SAS program for the                       
+first alternative, which is to convert the SAS transport data file to a                             
+regular SAS dataset using the SAS procedure: CIMPORT. Section B provides a                          
+sample SAS program for the second alternative, which is to read data from the                       
+ASCII data file using a SAS DATA step with INFILE, INPUT, and LABEL                                 
+statements. Section C explains format-related SAS statements that a user may                        
+optionally use when working with the SAS dataset. Examples of SAS programs                          
+(DATA step or PROC) are provided in all three sections, primarily for the                           
+benefit of inexperienced users. Section D contains complete SAS statements                          
+that must be used in the programs described in Sections B and C.                                    
+                                                                                                    
+******************************************************************************                      
+                                                                                                    
+The sample SAS programs provided in Sections A and B show how to create a                           
+permanent SAS dataset from the data files provided in this PUF release.                             
+                                                                                                    
+A. A Sample SAS Program for Converting the SAS Transport File to a                                  
+Permanent SAS Dataset                                                                               
+                                                                                                    
+The SAS procedure CIMPORT will read a SAS transport file and convert the                            
+data to regular SAS format, storing the output in a permanent SAS dataset.                          
+This permanent SAS dataset can then be used for all future processing and                           
+analyses.                                                                                           
+                                                                                                    
+Below is a sample SAS program that can be used to convert the SAS transport                         
+file to a permanent SAS dataset (in a Windows environment).                                         
+                                                                                                    
+     LIBNAME PUFLIB 'C:\MEPS\SASDATA';                                                              
+     FILENAME IN1 'C:\MEPS\DOWNLOAD\H242.SSP';                                                
+                                                                                                    
+     PROC CIMPORT DATA=PUFLIB.H242 INFILE=IN1;                                                
+     RUN;                                                                                           
+                                                                                                    
+                                                                                                    
+Below are SAS statements to print a list of variables and a few sample records                      
+from the permanent SAS dataset:                                                                     
+                                                                                                    
+     PROC CONTENTS DATA=PUFLIB.H242;                                                          
+     TITLE 'List of Variables in MEPS H242 SAS Dataset';                                      
+     RUN;                                                                                           
+                                                                                                    
+     PROC PRINT DATA=PUFLIB.H242 (OBS=20);                                                    
+     TITLE 'First 20 Observations in MEPS H242 SAS Dataset';                                  
+     RUN;                                                                                           
+                                                                                                    
+The LIBNAME statement tells SAS the location (directory name) to store the                          
+permanent SAS dataset which is output by PROC CIMPORT.  The FILENAME statement                      
+tells SAS the location (complete directory and file name) of the input SAS                          
+transport data file.                                                                                
+                                                                                                    
+NOTES:                                                                                              
+                                                                                                    
+     1)  The names used in the LIBNAME and FILENAME statements shown                                
+     above (i.e., PUFLIB, IN1) are arbitrary; they are only temporary                               
+     aliases.                                                                                       
+                                                                                                    
+     2)  The directory and file names used in the LIBNAME and FILENAME                              
+     statements shown above are Windows syntax and may need to be                                   
+     modified for other operating systems such as UNIX and Linux.                                   
+                                                                                                    
+     3)  H242 is the internal SAS dataset name (also the PC file name,                        
+     without the extension) prior to the creation of the SAS transport data                         
+     file.  After running PROC CIMPORT, the output SAS dataset assumes the same                     
+     dataset name (or file name).  Hence, in the example above, a file named                        
+     H242.SAS7BDAT will be created under the C:\MEPS\SASDATA directory when                   
+     PROC CIMPORT runs successfully.                                                                
+                                                                                                    
+     4)  The SAS transport file H242.SSP was created from a SAS V9                            
+     data file, using PROC CPORT.  This file should work with earlier versions of                   
+     SAS, although it has not been tested with those versions. Users who are                        
+     unable to use this SAS transport file should instead convert the ASCII                         
+     data file H242.DAT to a SAS dataset as described in Section B.                           
+                                                                                                    
+                                                                                                    
+B.     A Sample SAS Program for Converting the ASCII Data File to a Permanent                       
+SAS Dataset                                                                                         
+                                                                                                    
+The complete SAS statements (INPUT and LABEL) included in Section D are                             
+intended to save time for those users wishing to create a permanent SAS                             
+dataset from the H242.DAT ASCII data file.  These statements must be used                     
+in combination with other SAS statements to create the appropriate SAS                              
+program, as shown below.  To use the statements provided in Section D to                            
+create a SAS program, you will need an ASCII text editor.  If you are using an                      
+interactive form of SAS (Windows, UNIX, Linux, etc.), use the editor provided as                    
+part of the SAS software.                                                                           
+                                                                                                    
+Following is a sample Windows SAS program that will convert the ASCII data file to SAS              
+format:                                                                                             
+                                                                                                    
+     LIBNAME PUFLIB 'C:\MEPS\SASDATA';                                                              
+     FILENAME IN1 'C:\MEPS\DOWNLOAD\H242.DAT';                                                
+                                                                                                    
+     DATA PUFLIB.H242;                                                                        
+     INFILE IN1 LRECL=230;                                                                     
+     INPUT .....; * to user: insert the complete INPUT statement that is                            
+provided in Section D;                                                                              
+     LABEL .....; * to user: insert the complete LABEL statement that is                            
+provided in Section D;                                                                              
+     RUN;                                                                                           
+                                                                                                    
+Here is an explanation of the SAS statements used in the program above.                             
+                                                                                                    
+LIBNAME statement: This tells SAS the location (directory name) of the                              
+permanent SAS dataset.                                                                              
+                                                                                                    
+FILENAME statement: This tells SAS the location of the input ASCII data file.                       
+                                                                                                    
+DATA statement: This signifies the beginning of a SAS DATA step and specifies                       
+the output SAS dataset, referencing the LIBNAME entry (PUFLIB) and assigning                        
+an internal SAS dataset name (H242).  In the example, after the successful                    
+completion of the DATA step, a PC file named H242.SAS7BDAT would have                         
+been created in the C:\MEPS\SASDATA directory.                                                      
+                                                                                                    
+INFILE statement: This tells SAS the location (directory and file name) of the                      
+input ASCII data file.  Also provided is the logical record length (230                        
+bytes), with the default of RECFM=V implied when this parameter is omitted.                         
+LRECL and RECFM are optional parameters in the INFILE statement.  With regard                       
+to these options, please note the following: the ASCII data file H242.DAT                     
+contains a 2-byte carriage return/line feed at the end of each record.  When                        
+converting to a PC-SAS file, the LRECL option should be used to specify the                         
+record length to avoid use of a default record length by PC-SAS.  If the                            
+RECFM=V option is used, the LRECL option must be specified as the logical                           
+record length (e.g., 230 for H242.DAT).  If RECFM=F is used, then the                    
+LRECL value must  be specified as the logical record length plus 2 (232 for            
+H242.DAT).  Note that if the RECFM option is omitted, then the default                        
+option of RECFM=V is automatically used, and LRECL should be specified as the                       
+logical record (230 for H242.DAT).                                                       
+                                                                                                    
+INPUT statement: This specifies the input record layout, giving names, the                          
+beginning column positions, and the lengths for data items (which become SAS                        
+variables) in the ASCII data file (H242.DAT).  Variable type (numeric or                      
+character) is also defined by character variables having a dollar sign ($) directly                 
+before the variables length, while numeric variables do not have a dollar sign.                     
+                                                                                                    
+LABEL statement: This associates descriptive names with the SAS variables.                          
+                                                                                                    
+RUN statement: This tells SAS to execute all commands up to this point.                             
+                                                                                                    
+                                                                                                    
+C.     Optional Format-related SAS Statements                                                       
+                                                                                                    
+If a user wants to use formats for the SAS variables, a SAS format                                  
+catalog must first be created.  Below is a SAS program that will accomplish this:                   
+                                                                                                    
+     LIBNAME PUFLIB 'C:\MEPS\SASDATA';                                                              
+                                                                                                    
+     PROC FORMAT LIBRARY=PUFLIB;                                                                    
+     VALUE .....; * to user: insert the complete set of VALUE statements found                      
+in Section D;                                                                                       
+     VALUE .....;                                                                                   
+     .......... ;                                                                                   
+     RUN;                                                                                           
+                                                                                                    
+                                                                                                    
+Below is an example of how to use the SAS formats defined by the PROC FORMAT                        
+procedure:                                                                                          
+                                                                                                    
+     LIBNAME PUFLIB 'C:\MEPS\SASDATA';                                                              
+     OPTIONS FMTSEARCH=(PUFLIB);                                                                    
+                                                                                                    
+     PROC FREQ DATA=PUFLIB.H242;                                                              
+     TABLES .... / LIST MISSING;                                                                    
+     FORMAT varnam1 fmtnam1.  Varnam2 fmtnam2.  .... ;                                              
+     * to user: substitute varnam1 and fmtnam1 with actual variable names and                       
+format names;                                                                                       
+     *     Insert the FORMAT statement provided in Section D, if you are using                      
+all the variables in the TABLES statement;                                                          
+     TITLE 'Frequency Distributions ....';                                                          
+     RUN;                                                                                           
+                                                                                                    
+Here is an explanation of the SAS statements used above.                                            
+                                                                                                    
+LIBNAME statement: This tells SAS the location (directory name) of the SAS                          
+format library.  Please note that SAS datasets (file name extension is                              
+'SAS7BDAT') and format                                                                              
+catalog (file name extension is 'SAS7BCAT') can be stored under the same directory.                 
+                                                                                                    
+OPTIONS FMTSEARCH=...: This specifies the SAS format library.                                       
+                                                                                                    
+PROC FORMAT statement: This identifies the SAS procedure that will make SAS                         
+formats according to VALUE statements.  Formats will be stored in a file named                      
+FORMATS.SAS7BCAT.  Please note that the option 'LIBRARY=...' can be omitted                         
+if the user does not want to create a permanent SAS format library. When simply                     
+'PROC FORMAT;' is used, the formats are defined only for the duration of the                        
+batch SAS program or an interactive SAS session.                                                    
+                                                                                                    
+VALUE statement: This gives a) names to formats; and b) descriptive labels for                      
+individual values, or range of values.  The format names can then be invoked                        
+using a FORMAT statement if desired.                                                                
+                                                                                                    
+PROC FREQ statement: This identifies the SAS procedure that generates                               
+frequency distributions of variables specified in the TABLES statement,                             
+formatted if a FORMAT statement is used.  The input SAS dataset is specified                        
+in the 'DATA=' option.                                                                              
+                                                                                                    
+FORMAT statement: This associates existing formats with variables.  When using                      
+this statement, the formats must have already been created with a PROC FORMAT                       
+procedure.                                                                                          
+                                                                                                    
+RUN statement: This tells SAS to execute all commands up to this point.                             
+                                                                                                    
+                                                                                                    
+NOTES:                                                                                              
+                                                                                                    
+     1)  Use of formats is entirely optional, and depends on the types                              
+     of analyses that you are doing.  It is recommended that you create                             
+     and use them as appropriate.                                                                   
+                                                                                                    
+     2)  The names used in the LIBNAME and FILENAME statements shown                                
+     above (i.e., PUFLIB, IN1) are arbitrary; they are only temporary                               
+     aliases.                                                                                       
+                                                                                                    
+     3)  The file and directory specifications in the LIBNAME and                                   
+     FILENAME statements are Windows syntax and may need to be modified                             
+     for other operating systems such as UNIX and Linux.                                            
+                                                                                                    
+                                                                                                    
+D.  SAS Statements                                                                                  
+                                                                                                    
+This section contains SAS INPUT, LABEL, FORMAT, and VALUE statements for use in                     
+converting the ASCII H242.DAT file into a SAS dataset, and for creating                       
+SAS formats.                                                                                        
+                                                                                                    
+* INPUT STATEMENTS;
+INFILE IN LRECL=230;
+
+INPUT @1      EPCPIDX                          $35.0
+      @36     DUPERSID                         $10.0
+      @46     PHLDRIDX                         $10.0
+      @56     ESTBIDX                          $11.0
+      @67     EPRSIDX                          $25.0
+      @92     InsurPrivIDEX                    $14.0
+      @106    PANEL                             2.0
+      @108    RN                                1.0
+      @109    JOBSIDX                          $14.0
+      @123    JOBSINFR                          2.0
+      @125    JOBSFILE                          3.0
+      @128    FYFLG                             1.0
+      @129    CMJINS                            2.0
+      @131    EMPLSTAT                          3.0
+      @134    PHOLDER                           1.0
+      @135    DEPNDNT                           1.0
+      @136    EVALCOVR                          2.0
+      @138    STAT1                             2.0
+      @140    STAT2                             2.0
+      @142    STAT3                             2.0
+      @144    STAT4                             2.0
+      @146    STAT5                             2.0
+      @148    STAT6                             2.0
+      @150    STAT7                             2.0
+      @152    STAT8                             2.0
+      @154    STAT9                             2.0
+      @156    STAT10                            2.0
+      @158    STAT11                            2.0
+      @160    STAT12                            2.0
+      @162    DECPHLDR                          1.0
+      @163    OUTPHLDR                          1.0
+      @164    NOPUFLG                           1.0
+      @165    COVROUT_M18                       2.0
+      @167    TYPEFLAG_M23                      2.0
+      @169    STEXCH                            2.0
+      @171    PrivateCat_M23                    2.0
+      @173    HOSPINSX                          2.0
+      @175    MSUPINSX                          2.0
+      @177    DENTLINS                          2.0
+      @179    DENTLINX                          2.0
+      @181    VISIONIN                          2.0
+      @183    PMEDINS                           2.0
+      @185    COBRA                             3.0
+      @188    PLANMETL                          2.0
+      @190    COVTYPIN                          1.0
+      @191    OOPELIG                           1.0
+      @192    OOPPREM                           8.2
+      @200    OOPPREMX                          7.2
+      @207    OOPX12X                           8.2
+      @215    OOPFLAG                           2.0
+      @217    PREMLEVX                          3.0
+      @220    PREMSUBZ                          2.0
+      @222    ANNDEDCTP                         2.0
+      @224    HSAACCT                           2.0
+      @226    UPRHMO_M23                        3.0
+      @229    NAMECHNG                          2.0
+;
+
+
+* FORMAT STATEMENTS;
+FORMAT EPCPIDX                           $EPCPIDXF.
+       DUPERSID                          $DUPERSIDF.
+       PHLDRIDX                          $PHLDRIDXF.
+       ESTBIDX                           $ESTBIDXF.
+       EPRSIDX                           $EPRSIDXF.
+       InsurPrivIDEX                     $INSURPRIVIDEXF.
+       PANEL                             PANELF.
+       RN                                RNF.
+       JOBSIDX                           $JOBSIDXF.
+       JOBSINFR                          JOBSINFRF.
+       JOBSFILE                          JOBSFILEF.
+       FYFLG                             FYFLGF.
+       CMJINS                            CMJINSF.
+       EMPLSTAT                          EMPLSTATF.
+       PHOLDER                           PHOLDERF.
+       DEPNDNT                           DEPNDNTF.
+       EVALCOVR                          EVALCOVRF.
+       STAT1                             STAT1F.
+       STAT2                             STAT2F.
+       STAT3                             STAT3F.
+       STAT4                             STAT4F.
+       STAT5                             STAT5F.
+       STAT6                             STAT6F.
+       STAT7                             STAT7F.
+       STAT8                             STAT8F.
+       STAT9                             STAT9F.
+       STAT10                            STAT10F.
+       STAT11                            STAT11F.
+       STAT12                            STAT12F.
+       DECPHLDR                          DECPHLDRF.
+       OUTPHLDR                          OUTPHLDRF.
+       NOPUFLG                           NOPUFLGF.
+       COVROUT_M18                       COVROUT_M18F.
+       TYPEFLAG_M23                      TYPEFLAG_M23F.
+       STEXCH                            STEXCHF.
+       PrivateCat_M23                    PRIVATECAT_M23F.
+       HOSPINSX                          HOSPINSXF.
+       MSUPINSX                          MSUPINSXF.
+       DENTLINS                          DENTLINSF.
+       DENTLINX                          DENTLINXF.
+       VISIONIN                          VISIONINF.
+       PMEDINS                           PMEDINSF.
+       COBRA                             COBRAF.
+       PLANMETL                          PLANMETLF.
+       COVTYPIN                          COVTYPINF.
+       OOPELIG                           OOPELIGF.
+       OOPPREM                           OOPPREMF.
+       OOPPREMX                          OOPPREMXF.
+       OOPX12X                           OOPX12XF.
+       OOPFLAG                           OOPFLAGF.
+       PREMLEVX                          PREMLEVXF.
+       PREMSUBZ                          PREMSUBZF.
+       ANNDEDCTP                         ANNDEDCTPF.
+       HSAACCT                           HSAACCTF.
+       UPRHMO_M23                        UPRHMO_M23F.
+       NAMECHNG                          NAMECHNGF.
+;
+
+
+* LABEL STATEMENTS;
+LABEL EPCPIDX                          ="Insurance source-phldr-dependent identifier"
+      DUPERSID                         ="Person identifier"
+      PHLDRIDX                         ="Policyholder person identifier"
+      ESTBIDX                          ="Insurance source identifier"
+      EPRSIDX                          ="Unique insurance policy-source"
+      InsurPrivIDEX                    ="Unique insurance plcy source-insurance identifier"
+      PANEL                            ="Panel number"
+      RN                               ="Round number"
+      JOBSIDX                          ="Policyholder job-round identifier"
+      JOBSINFR                         ="Job identifier inferred not reported"
+      JOBSFILE                         ="Jobs file containing job information"
+      FYFLG                            ="Person in full year file"
+      CMJINS                           ="Current main job is the source of plan"
+      EMPLSTAT                         ="Policyholder employment status"
+      PHOLDER                          ="Policy holder flag"
+      DEPNDNT                          ="Dependent of policy holder flag"
+      EVALCOVR                         ="Covered at interview or December 31st"
+      STAT1                            ="Insurance active in January"
+      STAT2                            ="Insurance active in February"
+      STAT3                            ="Insurance active in March"
+      STAT4                            ="Insurance active in April"
+      STAT5                            ="Insurance active in May"
+      STAT6                            ="Insurance active in June"
+      STAT7                            ="Insurance active in July"
+      STAT8                            ="Insurance active in August"
+      STAT9                            ="Insurance active in September"
+      STAT10                           ="Insurance active in October"
+      STAT11                           ="Insurance active in November"
+      STAT12                           ="Insurance active in December"
+      DECPHLDR                         ="Deceased policyholder flag"
+      OUTPHLDR                         ="Out-of-RU policyholder flag"
+      NOPUFLG                          ="Policyholder not in full year file"
+      COVROUT_M18                      ="Policy covers person not in RU"
+      TYPEFLAG_M23                     ="Type of insurance source"
+      STEXCH                           ="State exchange coverage"
+      PrivateCat_M23                   ="Category of private coverage"
+      HOSPINSX                         ="Type health insurance received: hosp phys/HMO (ed)"
+      MSUPINSX                         ="Type health insurance received: Medigap (edited)"
+      DENTLINS                         ="Type health insurance received: dental"
+      DENTLINX                         ="Type health insurance received: dental (edited)"
+      VISIONIN                         ="Type health insurance received: vision"
+      PMEDINS                          ="Type health insurance received: prescription drug"
+      COBRA                            ="COBRA coverage"
+      PLANMETL                         ="Plan metal level"
+      COVTYPIN                         ="Single or family health insurance coverage plan"
+      OOPELIG                          ="Policyholder-insurance source has premium"
+      OOPPREM                          ="Monthly out-of-pocket premium"
+      OOPPREMX                         ="Monthly out-of-pocket premium (edited/imputed)"
+      OOPX12X                          ="Annual out-of-pocket premium (edited/imputed)"
+      OOPFLAG                          ="OOPPREMX edit/imputation flag"
+      PREMLEVX                         ="Portion of premium paid by family (edited)"
+      PREMSUBZ                         ="Cost of the premium subsidized"
+      ANNDEDCTP                        ="Plan deductible range estimate"
+      HSAACCT                          ="HSA with this plan"
+      UPRHMO_M23                       ="HMO coverage (edited)"
+      NAMECHNG                         ="Plan name change"
+;
+
+
+* VALUE STATEMENTS;
+VALUE ANNDEDCTPF  
+  -15 = "-15 CANNOT BE COMPUTED"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 LESS THAN $700/$1,400"
+  2 = "2 $700/$1,400 to $1,399/$2,799"
+  3 = "3 $1,400/$2,800 to $2,799/$5,599"
+  4 = "4 $2,800/$5,600 OR MORE"
+  5 = "5 NO ANNUAL DEDUCTIBLE"
+  6 = "6 LESS THAN $1,400/$2,800 - RANGE NOT SPECIFIED"
+  7 = "7 $1,400/$2,800 OR MORE - RANGE NOT SPECIFIED"
+  ;
+VALUE CMJINSF  
+  -15 = "-15 CANNOT BE COMPUTED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE COBRAF  
+  -15 = "-15 CANNOT BE COMPUTED"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE COVROUT_M18F  
+  -15 = "-15 CANNOT BE COMPUTED"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE COVTYPINF  
+  1 = "1 SINGLE"
+  2 = "2 FAMILY"
+  ;
+VALUE DECPHLDRF  
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE DENTLINSF  
+  -15 = "-15 CANNOT BE COMPUTED"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE DENTLINXF  
+  -15 = "-15 CANNOT BE COMPUTED"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE DEPNDNTF  
+  0 = "0 POLICYHOLDER"
+  1 = "1 DEPENDENT"
+  ;
+VALUE $DUPERSIDF  
+  '2460010101' - '2799694102' = "VALID ID"
+  ;
+VALUE EMPLSTATF  
+  -15 = "-15 CANNOT BE COMPUTED"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 CURRENTLY EMPLOYED"
+  2 = "2 RETIRED"
+  3 = "3 PREVIOUSLY EMPLOYED"
+  4 = "4 DECEASED"
+  91 = "91 OTHER"
+  ;
+VALUE $EPCPIDXF  
+  '24600100106246001010171132460010101' - '27996940103279969410231012799694102' = "VALID ID"
+  ;
+VALUE $EPRSIDXF  
+  '2460010010624600101017113' - '2799694010327996941023101' = "VALID ID"
+  ;
+VALUE $ESTBIDXF  
+  '24600100106' - '27996940103' = "VALID ID"
+  ;
+VALUE EVALCOVRF  
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE FYFLGF  
+  0 = "0 NO"
+  1 = "1 YES"
+  ;
+VALUE HOSPINSXF  
+  -15 = "-15 CANNOT BE COMPUTED"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE HSAACCTF  
+  -15 = "-15 CANNOT BE COMPUTED"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE $INSURPRIVIDEXF  
+  '24600100106113' - '27996940103101' = "VALID ID"
+  ;
+VALUE JOBSFILEF  
+  -1 = "-1 INAPPLICABLE"
+  211 = "HC211 2019 JOBSFILE"
+  218 = "HC218 2020 JOBSFILE"
+  227 = "HC227 2021 JOBSFILE"
+  237 = "HC237 2022 JOBSFILE"
+  ;
+VALUE $JOBSIDXF  
+  '-1' = "-1 INAPPLICABLE"
+  '24600101017104' - '27996941021102' = "VALID ID"
+  ;
+VALUE JOBSINFRF  
+  -1 = "-1 INAPPLICABLE"
+  0 = "0 NO"
+  1 = "1 YES"
+  ;
+VALUE MSUPINSXF  
+  -15 = "-15 CANNOT BE COMPUTED"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE NAMECHNGF  
+  -15 = "-15 CANNOT BE COMPUTED"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE NOPUFLGF  
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE OOPELIGF  
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE OOPFLAGF  
+  -1 = "-1 INAPPLICABLE"
+  0 = "0 NO"
+  1 = "1 YES"
+  ;
+VALUE OOPPREMF  
+  -15 = "-15 CANNOT BE COMPUTED"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  0 = "0 NO PREMIUM CONTRIBUTION"
+  0.02 - 128 = "$0.02 - $128.00"
+  128.01 - 260 = "$128.01 - $260.00"
+  260.01 - 463.84 = "$260.01 - $463.84"
+  463.85 - 15210 = "$463.85 - $15,210.00"
+  ;
+VALUE OOPPREMXF  
+  -1 = "-1 INAPPLICABLE"
+  0 = "0 NO PREMIUM CONTRIBUTION"
+  1 - 130 = "$1.00 - $130.00"
+  130.01 - 270 = "$130.01 - $270.00"
+  270.01 - 476.67 = "$270.01 - $476.67"
+  476.68 - 4583.33 = "$476.68 - $4,583.33"
+  ;
+VALUE OOPX12XF  
+  -1 = "-1 INAPPLICABLE"
+  0 = "0 NO PREMIUM CONTRIBUTION"
+  12 - 1560 = "$12.00 - $1,560.00"
+  1560.01 - 3240 = "$1,560.01 - $3,240.00"
+  3240.01 - 5720.04 = "$3,240.01 - $5,720.04"
+  5720.05 - 54999.96 = "$5,720.05 - $54,999.96"
+  ;
+VALUE OUTPHLDRF  
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE PANELF  
+  24 = "24 PANEL 24"
+  26 = "26 PANEL 26"
+  27 = "27 PANEL 27"
+  ;
+VALUE $PHLDRIDXF  
+  '2460010101' - '2799694102' = "VALID ID"
+  ;
+VALUE PHOLDERF  
+  0 = "0 DEPENDENT"
+  1 = "1 POLICYHOLDER"
+  ;
+VALUE PLANMETLF  
+  -15 = "-15 CANNOT BE COMPUTED"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 PLATINUM PLAN"
+  2 = "2 GOLD PLAN"
+  3 = "3 SILVER PLAN"
+  4 = "4 BRONZE PLAN"
+  5 = "5 CATASTROPHIC PLAN"
+  6 = "6 IF VOLUNTEERED: SOMETHING ELSE"
+  ;
+VALUE PMEDINSF  
+  -15 = "-15 CANNOT BE COMPUTED"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE PREMLEVXF  
+  -15 = "-15 CANNOT BE COMPUTED"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 FAMILY PAYS ALL PREMIUM COST"
+  2 = "2 FAMILY PAYS SOME PREMIUM COST"
+  3 = "3 FAMILY DOES NOT KNOW"
+  4 = "4 FAMILY DOES NOT PAY PREMIUM COST"
+  ;
+VALUE PREMSUBZF  
+  -15 = "-15 CANNOT BE COMPUTED"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE PRIVATECAT_M23F  
+  0 = "0 NOT HOSP/PHYS OR MEDIGAP COVERAGE"
+  1 = "1 EMPLOYER/UNION"
+  2 = "2 NONGROUP"
+  3 = "3 OTHER GROUP"
+  4 = "4 ESI, PHOLDER OUTSIDE RU"
+  5 = "5 NON-ESI, OUT OF RU PHOLDER"
+  6 = "6 STATE EXCHANGE"
+  99 = "99 DK TYPE OF PRIV COV"
+  ;
+VALUE RNF  
+  1 = "1"
+  2 = "2"
+  3 = "3"
+  4 = "4"
+  5 = "5"
+  7 = "7"
+  8 = "8"
+  9 = "9"
+  ;
+VALUE STAT10F  
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE STAT11F  
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE STAT12F  
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE STAT1F  
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE STAT2F  
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE STAT3F  
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE STAT4F  
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE STAT5F  
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE STAT6F  
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE STAT7F  
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE STAT8F  
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE STAT9F  
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE STEXCHF  
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES, EXCHANGE COVERAGE"
+  2 = "2 NO, NOT EXCHANGE COVERAGE"
+  ;
+VALUE TYPEFLAG_M23F  
+  -15 = "-15 CANNOT BE COMPUTED"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 EMPLOYER (THRU CURR/PREV JOB)"
+  2 = "2 UNION (THRU CURR/PREV JOB)"
+  3 = "3 EMPLOYER/UNION COVG NOT REPORTED IN EMPL SECTION"
+  4 = "4 STATE EXCH/MARKETPLACE"
+  5 = "5 INS CO-FR AGNT/BROKER"
+  6 = "6 GROUP/ASSOC"
+  7 = "7 PLAN OF SOMEONE NOT LVNG HERE"
+  8 = "8 MEDICARE"
+  9 = "9 MEDICAID"
+  10 = "10 MILITARY"
+  11 = "11 GHP"
+  12 = "12 INDIAN HEALTH SVC"
+  13 = "13 OTHER"
+  ;
+VALUE UPRHMO_M23F  
+  -15 = "-15 CANNOT BE COMPUTED"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 PRIVATE PLAN IS HMO"
+  2 = "2 PRIVATE PLAN IS NOT HMO"
+  ;
+VALUE VISIONINF  
+  -15 = "-15 CANNOT BE COMPUTED"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;

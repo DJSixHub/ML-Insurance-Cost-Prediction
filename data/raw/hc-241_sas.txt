@@ -1,0 +1,1071 @@
+SAS User File for H241 Data                                                                   
+                                                                                                    
+This file contains information and sample SAS programs to create a permanent                        
+SAS dataset for users who want to use SAS in processing the MEPS data                               
+provided in this PUF release.                                                                       
+                                                                                                    
+There are two ways to create a permanent SAS dataset, using either the SAS                          
+transport data file (H241.SSP) or the ASCII data file (H241.DAT)                        
+supplied in this PUF release. Section A provides a sample SAS program for the                       
+first alternative, which is to convert the SAS transport data file to a                             
+regular SAS dataset using the SAS procedure: CIMPORT. Section B provides a                          
+sample SAS program for the second alternative, which is to read data from the                       
+ASCII data file using a SAS DATA step with INFILE, INPUT, and LABEL                                 
+statements. Section C explains format-related SAS statements that a user may                        
+optionally use when working with the SAS dataset. Examples of SAS programs                          
+(DATA step or PROC) are provided in all three sections, primarily for the                           
+benefit of inexperienced users. Section D contains complete SAS statements                          
+that must be used in the programs described in Sections B and C.                                    
+                                                                                                    
+******************************************************************************                      
+                                                                                                    
+The sample SAS programs provided in Sections A and B show how to create a                           
+permanent SAS dataset from the data files provided in this PUF release.                             
+                                                                                                    
+A. A Sample SAS Program for Converting the SAS Transport File to a                                  
+Permanent SAS Dataset                                                                               
+                                                                                                    
+The SAS procedure CIMPORT will read a SAS transport file and convert the                            
+data to regular SAS format, storing the output in a permanent SAS dataset.                          
+This permanent SAS dataset can then be used for all future processing and                           
+analyses.                                                                                           
+                                                                                                    
+Below is a sample SAS program that can be used to convert the SAS transport                         
+file to a permanent SAS dataset (in a Windows environment).                                         
+                                                                                                    
+     LIBNAME PUFLIB 'C:\MEPS\SASDATA';                                                              
+     FILENAME IN1 'C:\MEPS\DOWNLOAD\H241.SSP';                                                
+                                                                                                    
+     PROC CIMPORT DATA=PUFLIB.H241 INFILE=IN1;                                                
+     RUN;                                                                                           
+                                                                                                    
+                                                                                                    
+Below are SAS statements to print a list of variables and a few sample records                      
+from the permanent SAS dataset:                                                                     
+                                                                                                    
+     PROC CONTENTS DATA=PUFLIB.H241;                                                          
+     TITLE 'List of Variables in MEPS H241 SAS Dataset';                                      
+     RUN;                                                                                           
+                                                                                                    
+     PROC PRINT DATA=PUFLIB.H241 (OBS=20);                                                    
+     TITLE 'First 20 Observations in MEPS H241 SAS Dataset';                                  
+     RUN;                                                                                           
+                                                                                                    
+The LIBNAME statement tells SAS the location (directory name) to store the                          
+permanent SAS dataset which is output by PROC CIMPORT.  The FILENAME statement                      
+tells SAS the location (complete directory and file name) of the input SAS                          
+transport data file.                                                                                
+                                                                                                    
+NOTES:                                                                                              
+                                                                                                    
+     1)  The names used in the LIBNAME and FILENAME statements shown                                
+     above (i.e., PUFLIB, IN1) are arbitrary; they are only temporary                               
+     aliases.                                                                                       
+                                                                                                    
+     2)  The directory and file names used in the LIBNAME and FILENAME                              
+     statements shown above are Windows syntax and may need to be                                   
+     modified for other operating systems such as UNIX and Linux.                                   
+                                                                                                    
+     3)  H241 is the internal SAS dataset name (also the PC file name,                        
+     without the extension) prior to the creation of the SAS transport data                         
+     file.  After running PROC CIMPORT, the output SAS dataset assumes the same                     
+     dataset name (or file name).  Hence, in the example above, a file named                        
+     H241.SAS7BDAT will be created under the C:\MEPS\SASDATA directory when                   
+     PROC CIMPORT runs successfully.                                                                
+                                                                                                    
+     4)  The SAS transport file H241.SSP was created from a SAS V9                            
+     data file, using PROC CPORT.  This file should work with earlier versions of                   
+     SAS, although it has not been tested with those versions. Users who are                        
+     unable to use this SAS transport file should instead convert the ASCII                         
+     data file H241.DAT to a SAS dataset as described in Section B.                           
+                                                                                                    
+                                                                                                    
+B.     A Sample SAS Program for Converting the ASCII Data File to a Permanent                       
+SAS Dataset                                                                                         
+                                                                                                    
+The complete SAS statements (INPUT and LABEL) included in Section D are                             
+intended to save time for those users wishing to create a permanent SAS                             
+dataset from the H241.DAT ASCII data file.  These statements must be used                     
+in combination with other SAS statements to create the appropriate SAS                              
+program, as shown below.  To use the statements provided in Section D to                            
+create a SAS program, you will need an ASCII text editor.  If you are using an                      
+interactive form of SAS (Windows, UNIX, Linux, etc.), use the editor provided as                    
+part of the SAS software.                                                                           
+                                                                                                    
+Following is a sample Windows SAS program that will convert the ASCII data file to SAS              
+format:                                                                                             
+                                                                                                    
+     LIBNAME PUFLIB 'C:\MEPS\SASDATA';                                                              
+     FILENAME IN1 'C:\MEPS\DOWNLOAD\H241.DAT';                                                
+                                                                                                    
+     DATA PUFLIB.H241;                                                                        
+     INFILE IN1 LRECL=119;                                                                     
+     INPUT .....; * to user: insert the complete INPUT statement that is                            
+provided in Section D;                                                                              
+     LABEL .....; * to user: insert the complete LABEL statement that is                            
+provided in Section D;                                                                              
+     RUN;                                                                                           
+                                                                                                    
+Here is an explanation of the SAS statements used in the program above.                             
+                                                                                                    
+LIBNAME statement: This tells SAS the location (directory name) of the                              
+permanent SAS dataset.                                                                              
+                                                                                                    
+FILENAME statement: This tells SAS the location of the input ASCII data file.                       
+                                                                                                    
+DATA statement: This signifies the beginning of a SAS DATA step and specifies                       
+the output SAS dataset, referencing the LIBNAME entry (PUFLIB) and assigning                        
+an internal SAS dataset name (H241).  In the example, after the successful                    
+completion of the DATA step, a PC file named H241.SAS7BDAT would have                         
+been created in the C:\MEPS\SASDATA directory.                                                      
+                                                                                                    
+INFILE statement: This tells SAS the location (directory and file name) of the                      
+input ASCII data file.  Also provided is the logical record length (119                        
+bytes), with the default of RECFM=V implied when this parameter is omitted.                         
+LRECL and RECFM are optional parameters in the INFILE statement.  With regard                       
+to these options, please note the following: the ASCII data file H241.DAT                     
+contains a 2-byte carriage return/line feed at the end of each record.  When                        
+converting to a PC-SAS file, the LRECL option should be used to specify the                         
+record length to avoid use of a default record length by PC-SAS.  If the                            
+RECFM=V option is used, the LRECL option must be specified as the logical                           
+record length (e.g., 119 for H241.DAT).  If RECFM=F is used, then the                    
+LRECL value must  be specified as the logical record length plus 2 (121 for            
+H241.DAT).  Note that if the RECFM option is omitted, then the default                        
+option of RECFM=V is automatically used, and LRECL should be specified as the                       
+logical record (119 for H241.DAT).                                                       
+                                                                                                    
+INPUT statement: This specifies the input record layout, giving names, the                          
+beginning column positions, and the lengths for data items (which become SAS                        
+variables) in the ASCII data file (H241.DAT).  Variable type (numeric or                      
+character) is also defined by character variables having a dollar sign ($) directly                 
+before the variables length, while numeric variables do not have a dollar sign.                     
+                                                                                                    
+LABEL statement: This associates descriptive names with the SAS variables.                          
+                                                                                                    
+RUN statement: This tells SAS to execute all commands up to this point.                             
+                                                                                                    
+                                                                                                    
+C.     Optional Format-related SAS Statements                                                       
+                                                                                                    
+If a user wants to use formats for the SAS variables, a SAS format                                  
+catalog must first be created.  Below is a SAS program that will accomplish this:                   
+                                                                                                    
+     LIBNAME PUFLIB 'C:\MEPS\SASDATA';                                                              
+                                                                                                    
+     PROC FORMAT LIBRARY=PUFLIB;                                                                    
+     VALUE .....; * to user: insert the complete set of VALUE statements found                      
+in Section D;                                                                                       
+     VALUE .....;                                                                                   
+     .......... ;                                                                                   
+     RUN;                                                                                           
+                                                                                                    
+                                                                                                    
+Below is an example of how to use the SAS formats defined by the PROC FORMAT                        
+procedure:                                                                                          
+                                                                                                    
+     LIBNAME PUFLIB 'C:\MEPS\SASDATA';                                                              
+     OPTIONS FMTSEARCH=(PUFLIB);                                                                    
+                                                                                                    
+     PROC FREQ DATA=PUFLIB.H241;                                                              
+     TABLES .... / LIST MISSING;                                                                    
+     FORMAT varnam1 fmtnam1.  Varnam2 fmtnam2.  .... ;                                              
+     * to user: substitute varnam1 and fmtnam1 with actual variable names and                       
+format names;                                                                                       
+     *     Insert the FORMAT statement provided in Section D, if you are using                      
+all the variables in the TABLES statement;                                                          
+     TITLE 'Frequency Distributions ....';                                                          
+     RUN;                                                                                           
+                                                                                                    
+Here is an explanation of the SAS statements used above.                                            
+                                                                                                    
+LIBNAME statement: This tells SAS the location (directory name) of the SAS                          
+format library.  Please note that SAS datasets (file name extension is                              
+'SAS7BDAT') and format                                                                              
+catalog (file name extension is 'SAS7BCAT') can be stored under the same directory.                 
+                                                                                                    
+OPTIONS FMTSEARCH=...: This specifies the SAS format library.                                       
+                                                                                                    
+PROC FORMAT statement: This identifies the SAS procedure that will make SAS                         
+formats according to VALUE statements.  Formats will be stored in a file named                      
+FORMATS.SAS7BCAT.  Please note that the option 'LIBRARY=...' can be omitted                         
+if the user does not want to create a permanent SAS format library. When simply                     
+'PROC FORMAT;' is used, the formats are defined only for the duration of the                        
+batch SAS program or an interactive SAS session.                                                    
+                                                                                                    
+VALUE statement: This gives a) names to formats; and b) descriptive labels for                      
+individual values, or range of values.  The format names can then be invoked                        
+using a FORMAT statement if desired.                                                                
+                                                                                                    
+PROC FREQ statement: This identifies the SAS procedure that generates                               
+frequency distributions of variables specified in the TABLES statement,                             
+formatted if a FORMAT statement is used.  The input SAS dataset is specified                        
+in the 'DATA=' option.                                                                              
+                                                                                                    
+FORMAT statement: This associates existing formats with variables.  When using                      
+this statement, the formats must have already been created with a PROC FORMAT                       
+procedure.                                                                                          
+                                                                                                    
+RUN statement: This tells SAS to execute all commands up to this point.                             
+                                                                                                    
+                                                                                                    
+NOTES:                                                                                              
+                                                                                                    
+     1)  Use of formats is entirely optional, and depends on the types                              
+     of analyses that you are doing.  It is recommended that you create                             
+     and use them as appropriate.                                                                   
+                                                                                                    
+     2)  The names used in the LIBNAME and FILENAME statements shown                                
+     above (i.e., PUFLIB, IN1) are arbitrary; they are only temporary                               
+     aliases.                                                                                       
+                                                                                                    
+     3)  The file and directory specifications in the LIBNAME and                                   
+     FILENAME statements are Windows syntax and may need to be modified                             
+     for other operating systems such as UNIX and Linux.                                            
+                                                                                                    
+                                                                                                    
+D.  SAS Statements                                                                                  
+                                                                                                    
+This section contains SAS INPUT, LABEL, FORMAT, and VALUE statements for use in                     
+converting the ASCII H241.DAT file into a SAS dataset, and for creating                       
+SAS formats.                                                                                        
+                                                                                                    
+* INPUT STATEMENTS;
+INFILE IN LRECL=119;
+
+INPUT @1      DUID                             $7.0
+      @8      PID                               3.0
+      @11     DUPERSID                         $10.0
+      @21     CONDN                             2.0
+      @23     CONDIDX                          $13.0
+      @36     PANEL                             2.0
+      @38     CONDRN                            1.0
+      @39     AGEDIAG                           3.0
+      @42     CRND1                             2.0
+      @44     CRND2                             2.0
+      @46     CRND3                             2.0
+      @48     CRND4                             2.0
+      @50     CRND5                             2.0
+      @52     CRND6                             2.0
+      @54     CRND7                             2.0
+      @56     CRND8                             2.0
+      @58     CRND9                             2.0
+      @60     INJURY                            1.0
+      @61     ACCDNWRK                          3.0
+      @64     ICD10CDX                         $8.0
+      @72     CCSR1X                           $6.0
+      @78     CCSR2X                           $6.0
+      @84     CCSR3X                           $6.0
+      @90     CCSR4X                           $6.0
+      @96     HHCOND                            1.0
+      @97     IPCOND                            1.0
+      @98     OPCOND                            1.0
+      @99     OBCOND                            1.0
+      @100    ERCOND                            1.0
+      @101    RXCOND                            1.0
+      @102    PERWT22F                          13.6
+      @115    VARSTR                            4.0
+      @119    VARPSU                            1.0
+;
+
+
+* FORMAT STATEMENTS;
+FORMAT DUID                              $DUID.
+       PID                               PID.
+       DUPERSID                          $DUPERSI.
+       CONDN                             CONDN.
+       CONDIDX                           $CONDIDX.
+       PANEL                             PANELF.
+       CONDRN                            CONDRN.
+       AGEDIAG                           AGEDIAGF.
+       CRND1                             CRND1F.
+       CRND2                             CRND2F.
+       CRND3                             CRND3F.
+       CRND4                             CRND4F.
+       CRND5                             CRND5F.
+       CRND6                             CRND6F.
+       CRND7                             CRND7F.
+       CRND8                             CRND8F.
+       CRND9                             CRND9F.
+       INJURY                            INJURY.
+       ACCDNWRK                          ACCDNWRK.
+       ICD10CDX                          $ICD10CD.
+       CCSR1X                            $CCSRF.
+       CCSR2X                            $CCSRF.
+       CCSR3X                            $CCSRF.
+       CCSR4X                            $CCSRF.
+       HHCOND                            HHCOND.
+       IPCOND                            IPCOND.
+       OPCOND                            OPCOND.
+       OBCOND                            OBCOND.
+       ERCOND                            ERCOND.
+       RXCOND                            RXCOND.
+       PERWT22F                          PERWT22F.
+       VARSTR                            VARSTR.
+       VARPSU                            VARPSU.
+;
+
+
+* LABEL STATEMENTS;
+LABEL DUID                             ="PANEL # + ENCRYPTED DU IDENTIFIER"
+      PID                              ="PERSON NUMBER"
+      DUPERSID                         ="PERSON ID (DUID + PID)"
+      CONDN                            ="CONDITION NUMBER"
+      CONDIDX                          ="CONDITION ID"
+      PANEL                            ="PANEL NUMBER"
+      CONDRN                           ="CONDITION ROUND NUMBER"
+      AGEDIAG                          ="AGE WHEN DIAGNOSED"
+      CRND1                            ="HAS CONDITION INFORMATION IN ROUND 1"
+      CRND2                            ="HAS CONDITION INFORMATION IN ROUND 2"
+      CRND3                            ="HAS CONDITION INFORMATION IN ROUND 3"
+      CRND4                            ="HAS CONDITION INFORMATION IN ROUND 4"
+      CRND5                            ="HAS CONDITION INFORMATION IN ROUND 5"
+      CRND6                            ="HAS CONDITION INFORMATION IN ROUND 6"
+      CRND7                            ="HAS CONDITION INFORMATION IN ROUND 7"
+      CRND8                            ="HAS CONDITION INFORMATION IN ROUND 8"
+      CRND9                            ="HAS CONDITION INFORMATION IN ROUND 9"
+      INJURY                           ="WAS CONDITION DUE TO ACCIDENT/INJURY"
+      ACCDNWRK                         ="DID ACCIDENT OCCUR AT WORK"
+      ICD10CDX                         ="ICD-10-CM CODE FOR CONDITION - EDITED"
+      CCSR1X                           ="CLINICAL CLASSIFICATION REFINED CODE 1- EDITED"
+      CCSR2X                           ="CLINICAL CLASSIFICATION REFINED CODE 2- EDITED"
+      CCSR3X                           ="CLINICAL CLASSIFICATION REFINED CODE 3- EDITED"
+      CCSR4X                           ="CLINICAL CLASSIFICATION REFINED CODE 4- EDITED"
+      HHCOND                           ="ANY HOME HEALTH EVENTS ASSOC. W/ CONDITION?"
+      IPCOND                           ="ANY INPATIENT EVENTS ASSOC. W/ CONDITION?"
+      OPCOND                           ="ANY OUTPATIENT EVENTS ASSOC. W/ CONDITION?"
+      OBCOND                           ="ANY OFFICE-BASED EVENTS ASSOC. W/ CONDITION?"
+      ERCOND                           ="ANY ER EVENTS ASSOC. W/ CONDITION?"
+      RXCOND                           ="ANY PRESCRIBED MEDICINES ASSOC. W/ COND.?"
+      PERWT22F                         ="EXPENDITURE FILE PERSON WEIGHT, 2022"
+      VARSTR                           ="VARIANCE ESTIMATION STRATUM, 2022"
+      VARPSU                           ="VARIANCE ESTIMATION PSU, 2022"
+;
+
+* NOTE: FOR THE VARIABLES ICD10CDX, CCSR1X, CCSR2X, CCSR3X, AND CCSR4X THERE ARE 2 VALUES;
+* STATEMENTS PROVIDED BELOW. THOSE USED IN THE FORMAT STATEMENTS PROVIDED ABOVE;
+* CAN BE USED TO CONSTRUCT THE FORMATS THAT ARE SHOWN IN THE HC241 CODEBOOK; 
+* THOSE ENDING WITH THE LETTER 'B' CAN BE USED TO CONSTRUCT LONGER FORMATS THAT;
+* PROVIDE A LABEL FOR EACH VALUE;
+
+* VALUE STATEMENTS;
+VALUE ACCDNWRK  
+  -15 = "-15 CANNOT BE COMPUTED"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  3 = "3 DOES NOT WORK"
+  ;
+VALUE AGEDIAGF  
+  -15 = "-15 CANNOT BE COMPUTED"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  0 - 85 = "0 - 85 AGE WHEN DIAGNOSED"
+  ;
+VALUE $CCSRF  
+  '-1' = "-1 INAPPLICABLE"
+  '-15' = "-15 CANNOT BE COMPUTED"
+  'BLD000' - 'BLD010' = "BLD000 - BLD010"
+  'CIR000' - 'CIR039' = "CIR000 - CIR039"
+  'DEN000' - 'DEN003' = "DEN000 - DEN003"
+  'DIG000' - 'DIG025' = "DIG000 - DIG025"
+  'EAR000' - 'EAR006' = "EAR000 - EAR006"
+  'END000' - 'END017' = "END000 - END017"
+  'EXT000' = "EXT000 - EXT000"
+  'EYE000' - 'EYE012' = "EYE000 - EYE012"
+  'FAC000' - 'FAC025' = "FAC000 - FAC025"
+  'GEN000' - 'GEN026' = "GEN000 - GEN026"
+  'INF000' - 'INF012' = "INF000 - INF012"
+  'INJ000' - 'INJ076' = "INJ000 - INJ076"
+  'MAL000' - 'MAL010' = "MAL000 - MAL010"
+  'MBD000' - 'MBD034' = "MBD000 - MBD034"
+  'MUS000' - 'MUS038' = "MUS000 - MUS038"
+  'NEO000' - 'NEO074' = "NEO000 - NEO074"
+  'NVS000' - 'NVS022' = "NVS000 - NVS022"
+  'PNL000' - 'PNL015' = "PNL000 - PNL015"
+  'PRG000' - 'PRG029' = "PRG000 - PRG029"
+  'RSP000' - 'RSP017' = "RSP000 - RSP017"
+  'SKN000' - 'SKN007' = "SKN000 - SKN007"
+  'SYM000' - 'SYM017' = "SYM000 - SYM017"
+  ;
+VALUE $CCSR1B
+   "-15"   ="-15  CANNOT BE COMPUTED"                                         
+   "BLD000"="BLD000 DISEASES OF BLOOD AND DISORDERS INVOLVING IMMUNE MECHANIS"
+   "BLD001"="BLD001 NUTRITIONAL ANEMIA"                                       
+   "BLD003"="BLD003 APLASTIC ANEMIA"                                          
+   "CIR000"="CIR000 DISEASES OF THE CIRCULATORY SYSTEM"                       
+   "CIR003"="CIR003 NONRHEUMATIC AND UNSPECIFIED VALVE DISORDERS"             
+   "CIR004"="CIR004 ENDOCARDITIS AND ENDOCARDIAL DISEASE"                     
+   "CIR007"="CIR007 ESSENTIAL HYPERTENSION"                                   
+   "CIR009"="CIR009 ACUTE MYOCARDIAL INFARCTION"                              
+   "CIR011"="CIR011 CORONARY ATHEROSCLEROSIS AND OTHER HEART DISEASE"         
+   "CIR012"="CIR012 NONSPECIFIC CHEST PAIN"                                   
+   "CIR013"="CIR013 ACUTE PULMONARY EMBOLISM"                                 
+   "CIR015"="CIR015 OTHER AND ILL-DEFINED HEART DISEASE"                      
+   "CIR016"="CIR016 CONDUCTION DISORDERS"                                     
+   "CIR017"="CIR017 CARDIAC DYSRHYTHMIAS"                                     
+   "CIR019"="CIR019 HEART FAILURE"                                            
+   "CIR020"="CIR020 CEREBRAL INFARCTION"                                      
+   "CIR026"="CIR026 PERIPHERAL AND VISCERAL VASCULAR DISEASE"                 
+   "CIR030"="CIR030 AORTIC AND PERIPHERAL ARTERIAL EMBOLISM OR THROMBOSIS"    
+   "CIR031"="CIR031 HYPOTENSION"                                              
+   "CIR032"="CIR032 OTHER SPECIFIED AND UNSPECIFIED CIRCULATORY DISEASE"      
+   "CIR035"="CIR035 VARICOSE VEINS OF LOWER EXTREMITY"                        
+   "CIR039"="CIR039 OTHER SPECIFIED DISEASES OF VEINS AND LYMPHATICS"         
+   "DEN000"="DEN000 DENTAL DISEASES"                                          
+   "DEN001"="DEN001 ANY DENTAL CONDITION INCLUDING TRAUMATIC INJURY"          
+   "DIG000"="DIG000 DISEASES OF THE DIGESTIVE SYSTEM"                         
+   "DIG001"="DIG001 INTESTINAL INFECTION"                                     
+   "DIG004"="DIG004 ESOPHAGEAL DISORDERS"                                     
+   "DIG005"="DIG005 GASTRODUODENAL ULCER"                                     
+   "DIG007"="DIG007 GASTRITIS AND DUODENITIS"                                 
+   "DIG008"="DIG008 OTH SPECIFIED & UNSPECIFIED DISORDERS OF STOMACH & DUODEN"
+   "DIG010"="DIG010 ABDOMINAL HERNIA"                                         
+   "DIG011"="DIG011 REGIONAL ENTERITIS AND ULCERATIVE COLITIS"                
+   "DIG013"="DIG013 DIVERTICULOSIS AND DIVERTICULITIS"                        
+   "DIG014"="DIG014 HEMORRHOIDS"                                              
+   "DIG017"="DIG017 BILIARY TRACT DISEASE"                                    
+   "DIG019"="DIG019 OTHER SPECIFIED AND UNSPECIFIED LIVER DISEASE"            
+   "DIG020"="DIG020 PANCREATIC DISORDERS (EXCLUDING DIABETES)"                
+   "DIG021"="DIG021 GASTROINTESTINAL HEMORRHAGE"                              
+   "DIG022"="DIG022 NONINFECTIOUS GASTROENTERITIS"                            
+   "DIG025"="DIG025 OTHER SPECIFIED AND UNSPECIFIED GASTROINTESTINAL DISORDER"
+   "EAR000"="EAR000 DISEASES OF THE EAR AND MASTOID PROCESS"                  
+   "EAR001"="EAR001 OTITIS MEDIA"                                             
+   "EAR004"="EAR004 HEARING LOSS"                                             
+   "EAR006"="EAR006 OTHER SPECIFIED AND UNSPECIFIED DISORDERS OF THE EAR"     
+   "END000"="END000 ENDOCRINE, NUTRITIONAL AND METABOLIC DISEASES"            
+   "END001"="END001 THYROID DISORDERS"                                        
+   "END002"="END002 DIABETES MELLITUS WITHOUT COMPLICATION"                   
+   "END003"="END003 DIABETES MELLITUS WITH COMPLICATION"                      
+   "END007"="END007 NUTRITIONAL DEFICIENCIES"                                 
+   "END009"="END009 OBESITY"                                                  
+   "END010"="END010 DISORDERS OF LIPID METABOLISM"                            
+   "END011"="END011 FLUID AND ELECTROLYTE DISORDERS"                          
+   "END015"="END015 OTHER SPECIFIED AND UNSPECIFIED ENDOCRINE DISORDERS"      
+   "END016"="END016 OTH SPECIFIED & UNSPEC NUTRITIONAL AND METABOLIC DISORDER"
+   "EXT000"="EXT000 EXTERNAL CAUSES OF MORBIDITY"                             
+   "EYE000"="EYE000 DISEASES OF THE EYE AND ADNEXA"                           
+   "EYE001"="EYE001 CORNEA AND EXTERNAL DISEASE"                              
+   "EYE002"="EYE002 CATARACT AND OTHER LENS DISORDERS"                        
+   "EYE003"="EYE003 GLAUCOMA"                                                 
+   "EYE004"="EYE004 UVEITIS AND OCULAR INFLAMMATION"                          
+   "EYE005"="EYE005 RETINAL AND VITREOUS CONDITIONS"                          
+   "EYE008"="EYE008 OCULOFACIAL PLASTICS AND ORBITAL CONDITIONS"              
+   "EYE009"="EYE009 REFRACTIVE ERROR"                                         
+   "EYE010"="EYE010 BLINDNESS AND VISION DEFECTS"                             
+   "EYE012"="EYE012 OTHER SPECIFIED EYE DISORDERS"                            
+   "FAC000"="FAC000 FACTORS INFLUENCING HEALTH STATUS & CONTACT W/ HEALTH SER"
+   "FAC003"="FAC003 ENCTR FOR OBS, EXAM COND R/O, EXCL INFECT DIS, NPL, MENT" 
+   "FAC005"="FAC005 ENCOUNTER FOR PROPHYLACTIC MEASURES (EXCLUDES IMMUNIZATIO"
+   "FAC008"="FAC008 NEOPLASM-RELATED ENCOUNTERS"                              
+   "FAC009"="FAC009 IMPLANT, DEVICE OR GRAFT RELATED ENCOUNTER"               
+   "FAC010"="FAC010 OTHER AFTERCARE ENCOUNTER"                                
+   "FAC012"="FAC012 OTHER SPECIFIED ENCOUNTERS AND COUNSELING"                
+   "FAC013"="FAC013 CONTRACEPTIVE AND PROCREATIVE MANAGEMENT"                 
+   "FAC014"="FAC014 MEDICAL EXAMINATION/EVALUATION"                           
+   "FAC016"="FAC016 EXPOSURE, ENCTR, SCREENING OR CONTACT W/ INFECTIOUS DISEA"
+   "FAC019"="FAC019 SOCIOECONOMIC/PSYCHOSOCIAL FACTORS"                       
+   "FAC020"="FAC020 LIFESTYLE/LIFE MANAGEMENT FACTORS"                        
+   "FAC022"="FAC022 ACQUIRED ABSENCE OF LIMB OR ORGAN"                        
+   "FAC025"="FAC025 OTHER SPECIFIED STATUS"                                   
+   "GEN000"="GEN000 DISEASES OF THE GENITOURINARY SYSTEM"                     
+   "GEN001"="GEN001 NEPHRITIS; NEPHROSIS; RENAL SCLEROSIS"                    
+   "GEN002"="GEN002 ACUTE AND UNSPECIFIED RENAL FAILURE"                      
+   "GEN003"="GEN003 CHRONIC KIDNEY DISEASE"                                   
+   "GEN004"="GEN004 URINARY TRACT INFECTIONS"                                 
+   "GEN005"="GEN005 CALCULUS OF URINARY TRACT"                                
+   "GEN006"="GEN006 OTH SPECIFIED AND UNSPECIFIED DISEASES OF KIDNEY AND URET"
+   "GEN007"="GEN007 OTH SPECIFIED & UNSPECIFIED DISEASES OF BLADDER AND URETH"
+   "GEN008"="GEN008 URINARY INCONTINENCE"                                     
+   "GEN012"="GEN012 HYPERPLASIA OF PROSTATE"                                  
+   "GEN014"="GEN014 ERECTILE DYSFUNCTION"                                     
+   "GEN016"="GEN016 OTHER SPECIFIED MALE GENITAL DISORDERS"                   
+   "GEN017"="GEN017 NONMALIGNANT BREAST CONDITIONS"                           
+   "GEN018"="GEN018 INFLAMMATORY DISEASES OF FEMALE PELVIC ORGANS"            
+   "GEN020"="GEN020 PROLAPSE OF FEMALE GENITAL ORGANS"                        
+   "GEN021"="GEN021 MENSTRUAL DISORDERS"                                      
+   "GEN022"="GEN022 BENIGN OVARIAN CYST"                                      
+   "GEN023"="GEN023 MENOPAUSAL DISORDERS"                                     
+   "GEN025"="GEN025 OTHER SPECIFIED FEMALE GENITAL DISORDERS"                 
+   "INF000"="INF000 CERTAIN INFECTIOUS AND PARASITIC DISEASES"                
+   "INF003"="INF003 BACTERIAL INFECTIONS"                                     
+   "INF004"="INF004 FUNGAL INFECTIONS"                                        
+   "INF006"="INF006 HIV INFECTION"                                            
+   "INF008"="INF008 VIRAL INFECTION"                                          
+   "INF009"="INF009 PARASITIC, OTHER SPECIFIED AND UNSPECIFIED INFECTIONS"    
+   "INF012"="INF012 CORONAVIRUS DISEASE - 2019 (COVID-19)"                    
+   "INJ000"="INJ000 INJURY, POISONING & CERTAIN OTH CONSEQUENCES OF EXTNL CAU"
+   "INJ027"="INJ027 OTHER UNSPECIFIED INJURY"                                 
+   "INJ031"="INJ031 ALLERGIC REACTIONS"                                       
+   "INJ039"="INJ039 FRACTURE OF THE SPINE AND BACK, SUBSEQUENT ENCOUNTER"     
+   "INJ041"="INJ041 FRACTURE OF THE UPPER LIMB, SUBSEQUENT ENCOUNTER"         
+   "INJ042"="INJ042 FRACTURE OF LOWER LIMB (EXCEPT HIP), SUBSEQUENT ENCOUNTER"
+   "INJ045"="INJ045 TRAUMATIC BRAIN INJURY (TBI); CONCUSSION, SUBSEQUENT ENCT"
+   "INJ049"="INJ049 OPEN WOUNDS TO LIMBS, SUBSEQUENT ENCOUNTER"               
+   "INJ054"="INJ054 SUPERFICIAL INJURY; CONTUSION, SUBSEQUENT ENCOUNTER"      
+   "INJ060"="INJ060 TOXIC EFFECTS, SUBSEQUENT ENCOUNTER"                      
+   "INJ061"="INJ061 SPRAINS AND STRAINS, SUBSEQUENT ENCOUNTER"                
+   "INJ064"="INJ064 OTHER UNSPECIFIED INJURIES, SUBSEQUENT ENCOUNTER"         
+   "INJ067"="INJ067 ALLERGIC REACTIONS, SUBSEQUENT ENCOUNTER"                 
+   "INJ072"="INJ072 COMPLC OF OTHER SURGICAL/MEDICAL CARE, INJURY, SUBSEQ ENC"
+   "MAL000"="MAL000 CONGENITAL MALFORMATIONS, DEFORMATIONS & CHROMOSOMAL ABNO"
+   "MBD000"="MBD000 MENTAL, BEHAVIORAL AND NEURODEVELOPMENTAL DISORDERS"      
+   "MBD001"="MBD001 SCHIZOPHRENIA SPECTRUM AND OTHER PSYCHOTIC DISORDERS"     
+   "MBD002"="MBD002 DEPRESSIVE DISORDERS"                                     
+   "MBD003"="MBD003 BIPOLAR AND RELATED DISORDERS"                            
+   "MBD004"="MBD004 OTHER SPECIFIED AND UNSPECIFIED MOOD DISORDERS"           
+   "MBD005"="MBD005 ANXIETY AND FEAR-RELATED DISORDERS"                       
+   "MBD006"="MBD006 OBSESSIVE-COMPULSIVE AND RELATED DISORDERS"               
+   "MBD007"="MBD007 TRAUMA- AND STRESSOR-RELATED DISORDERS"                   
+   "MBD013"="MBD013 MISCELLANEOUS MENTAL AND BEHAVIORAL DISORDERS/CONDITIONS" 
+   "MBD014"="MBD014 NEURODEVELOPMENTAL DISORDERS"                             
+   "MBD017"="MBD017 ALCOHOL-RELATED DISORDERS"                                
+   "MUS000"="MUS000 DISEASES OF THE MUSCULOSKELETAL SYSTEM AND CONNECTIVE TIS"
+   "MUS003"="MUS003 RHEUMATOID ARTHRITIS AND RELATED DISEASE"                 
+   "MUS006"="MUS006 OSTEOARTHRITIS"                                           
+   "MUS007"="MUS007 OTHER SPECIFIED JOINT DISORDERS"                          
+   "MUS009"="MUS009 TENDON AND SYNOVIAL DISORDERS"                            
+   "MUS010"="MUS010 MUSCULOSKELETAL PAIN, NOT LOW BACK PAIN"                  
+   "MUS011"="MUS011 SPONDYLOPATHIES/SPONDYLOARTHROPATHY (INCLUDING INFECTIVE)"
+   "MUS013"="MUS013 OSTEOPOROSIS"                                             
+   "MUS021"="MUS021 ACQUIRED FOOT DEFORMITIES"                                
+   "MUS022"="MUS022 SCOLIOSIS AND OTHER POSTURAL DORSOPATHIC DEFORMITIES"     
+   "MUS024"="MUS024 SYSTEMIC LUPUS ERYTHEMATOSUS AND CONNECTIVE TISSUE DISORD"
+   "MUS025"="MUS025 OTHER SPECIFIED CONNECTIVE TISSUE DISEASE"                
+   "MUS026"="MUS026 MUSCLE DISORDERS"                                         
+   "MUS028"="MUS028 OTHER SPECIFIED BONE DISEASE AND MUSCULOSKELETAL DEFORMIT"
+   "MUS033"="MUS033 GOUT"                                                     
+   "MUS038"="MUS038 LOW BACK PAIN"                                            
+   "NEO000"="NEO000 NEOPLASMS"                                                
+   "NEO015"="NEO015 GASTROINTESTINAL CANCERS - COLORECTAL"                    
+   "NEO022"="NEO022 RESPIRATORY CANCERS"                                      
+   "NEO025"="NEO025 SKIN CANCERS - MELANOMA"                                  
+   "NEO026"="NEO026 SKIN CANCERS - BASAL CELL CARCINOMA"                      
+   "NEO027"="NEO027 SKIN CANCERS - SQUAMOUS CELL CARCINOMA"                   
+   "NEO028"="NEO028 SKIN CANCERS - ALL OTHER TYPES"                           
+   "NEO030"="NEO030 BREAST CANCER - ALL OTHER TYPES"                          
+   "NEO039"="NEO039 MALE REPRODUCTIVE SYSTEM CANCERS - PROSTATE"              
+   "NEO050"="NEO050 ENDOCRINE SYSTEM CANCERS - THYROID"                       
+   "NEO058"="NEO058 NON-HODGKIN LYMPHOMA"                                     
+   "NEO072"="NEO072 NEOPLASMS OF UNSPECIFIED NATURE OR UNCERTAIN BEHAVIOR"    
+   "NEO073"="NEO073 BENIGN NEOPLASMS"                                         
+   "NVS000"="NVS000 DISEASES OF THE NERVOUS SYSTEM"                           
+   "NVS004"="NVS004 PARKINSON`S DISEASE"                                      
+   "NVS005"="NVS005 MULTIPLE SCLEROSIS"                                       
+   "NVS006"="NVS006 OTHER NERV SYS DISORDERS (OFTEN HEREDITARY OR DEGENERATIV"
+   "NVS009"="NVS009 EPILEPSY; CONVULSIONS"                                    
+   "NVS010"="NVS010 HEADACHE; INCLUDING MIGRAINE"                             
+   "NVS011"="NVS011 NEUROCOGNITIVE DISORDERS"                                 
+   "NVS012"="NVS012 TRANSIENT CEREBRAL ISCHEMIA"                              
+   "NVS015"="NVS015 POLYNEUROPATHIES"                                         
+   "NVS016"="NVS016 SLEEP WAKE DISORDERS"                                     
+   "NVS017"="NVS017 NERVE AND NERVE ROOT DISORDERS"                           
+   "NVS019"="NVS019 NERVOUS SYSTEM PAIN AND PAIN SYNDROMES"                   
+   "PNL000"="PNL000 CERTAIN CONDITIONS ORIGINATING IN THE PERINATAL PERIOD"   
+   "PNL001"="PNL001 LIVEBORN"                                                 
+   "PRG000"="PRG000 PREGNANCY, CHILDBIRTH AND THE PUERPERIUM"                 
+   "PRG029"="PRG029 UNCOMPLICATED PREGNANCY, DELIVERY OR PUERPERIUM"          
+   "RSP000"="RSP000 DISEASES OF THE RESPIRATORY SYSTEM"                       
+   "RSP001"="RSP001 SINUSITIS"                                                
+   "RSP002"="RSP002 PNEUMONIA (EXCEPT THAT CAUSED BY TUBERCULOSIS)"           
+   "RSP003"="RSP003 INFLUENZA"                                                
+   "RSP004"="RSP004 ACUTE AND CHRONIC TONSILLITIS"                            
+   "RSP005"="RSP005 ACUTE BRONCHITIS"                                         
+   "RSP006"="RSP006 OTHER SPECIFIED UPPER RESPIRATORY INFECTIONS"             
+   "RSP007"="RSP007 OTHER SPECIFIED AND UNSPECIFIED UPPER RESPIRATORY DISEASE"
+   "RSP008"="RSP008 CHRONIC OBSTRUCTIVE PULMONARY DISEASE AND BRONCHIECTASIS" 
+   "RSP009"="RSP009 ASTHMA"                                                   
+   "RSP016"="RSP016 OTHER SPECIFIED AND UNSPECIFIED LOWER RESPIRATORY DISEASE"
+   "SKN000"="SKN000 DISEASES OF THE SKIN AND SUBCUTANEOUS TISSUE"             
+   "SKN001"="SKN001 SKIN AND SUBCUTANEOUS TISSUE INFECTIONS"                  
+   "SKN002"="SKN002 OTHER SPECIFIED INFLAMMATORY CONDITION OF SKIN"           
+   "SKN007"="SKN007 OTHER SPECIFIED AND UNSPECIFIED SKIN DISORDERS"           
+   "SYM000"="SYM000 SYMPTOMS, SIGNS AND ABNORMAL CLINICAL & LAB FINDINGS, NEC"
+   "SYM001"="SYM001 SYNCOPE"                                                  
+   "SYM002"="SYM002 FEVER"                                                    
+   "SYM004"="SYM004 NAUSEA AND VOMITING"                                      
+   "SYM006"="SYM006 ABDOMINAL PAIN & OTHER DIGESTIVE/ABDOMEN SIGNS AND SYMPTO"
+   "SYM007"="SYM007 MALAISE AND FATIGUE"                                      
+   "SYM010"="SYM010 NERVOUS SYSTEM SIGNS AND SYMPTOMS"                        
+   "SYM011"="SYM011 GENITOURINARY SIGNS AND SYMPTOMS"                         
+   "SYM012"="SYM012 CIRCULATORY SIGNS AND SYMPTOMS"                           
+   "SYM013"="SYM013 RESPIRATORY SIGNS AND SYMPTOMS"                           
+   "SYM014"="SYM014 SKIN/SUBCUTANEOUS SIGNS AND SYMPTOMS"                     
+   "SYM015"="SYM015 GENERAL SENSATION/PERCEPTION SIGNS AND SYMPTOMS"          
+   "SYM016"="SYM016 OTHER GENERAL SIGNS AND SYMPTOMS"                         
+   "SYM017"="SYM017 ABNORMAL FINDINGS WITHOUT DIAGNOSIS"    
+   ;
+VALUE $CCSR2B
+  "-1"    ="-1  INAPPLICABLE"                                                
+  "DEN002"="DEN002 NONTRAUMATIC DENTAL CONDITIONS"                           
+  "DIG000"="DIG000 DISEASES OF THE DIGESTIVE SYSTEM"                         
+  "END005"="END005 DIABETES MELLITUS, TYPE 2"                                
+  "EYE000"="EYE000 DISEASES OF THE EYE AND ADNEXA"                           
+  "FAC000"="FAC000 FACTORS INFLUENCING HEALTH STATUS & CONTACT W/ HEALTH SER"
+  "FAC009"="FAC009 IMPLANT, DEVICE OR GRAFT RELATED ENCOUNTER"               
+  "GEN000"="GEN000 DISEASES OF THE GENITOURINARY SYSTEM"                     
+  "GEN025"="GEN025 OTHER SPECIFIED FEMALE GENITAL DISORDERS"                 
+  "INF000"="INF000 CERTAIN INFECTIOUS AND PARASITIC DISEASES"                
+  "INF008"="INF008 VIRAL INFECTION"                                          
+  "INJ000"="INJ000 INJURY, POISONING & CERTAIN OTH CONSEQUENCES OF EXTNL CAU"
+  "INJ048"="INJ048 OPEN WOUNDS OF HEAD AND NECK, SUBSEQUENT ENCOUNTER"       
+  "MBD000"="MBD000 MENTAL, BEHAVIORAL AND NEURODEVELOPMENTAL DISORDERS"      
+  "MUS000"="MUS000 DISEASES OF THE MUSCULOSKELETAL SYSTEM AND CONNECTIVE TIS"
+  "MUS038"="MUS038 LOW BACK PAIN"                                            
+  "NEO000"="NEO000 NEOPLASMS"                                                
+  "NVS000"="NVS000 DISEASES OF THE NERVOUS SYSTEM"                           
+  "NVS016"="NVS016 SLEEP WAKE DISORDERS"                                     
+  "PNL000"="PNL000 CERTAIN CONDITIONS ORIGINATING IN THE PERINATAL PERIOD"   
+  "PRG000"="PRG000 PREGNANCY, CHILDBIRTH AND THE PUERPERIUM"                 
+  "RSP000"="RSP000 DISEASES OF THE RESPIRATORY SYSTEM"                       
+  "RSP006"="RSP006 OTHER SPECIFIED UPPER RESPIRATORY INFECTIONS"             
+  "RSP007"="RSP007 OTHER SPECIFIED AND UNSPECIFIED UPPER RESPIRATORY DISEASE"
+  "SKN000"="SKN000 DISEASES OF THE SKIN AND SUBCUTANEOUS TISSUE"             
+  "SKN005"="SKN005 CONTACT DERMATITIS"                                       
+  "SKN007"="SKN007 OTHER SPECIFIED AND UNSPECIFIED SKIN DISORDERS"           
+  "SYM000"="SYM000 SYMPTOMS, SIGNS AND ABNORMAL CLINICAL & LAB FINDINGS, NEC"
+  "SYM010"="SYM010 NERVOUS SYSTEM SIGNS AND SYMPTOMS"    
+  ;
+VALUE $CCSR3B
+  "-1"    ="-1  INAPPLICABLE"                                                
+  "DEN003"="DEN003 CARIES, PERIODONTITIS, AND OTHER PREVENTABLE DENTAL CONDS"
+  "DIG002"="DIG002 DISORDERS OF TEETH AND GINGIVA"                           
+  "DIG003"="DIG003 DISEASES OF MOUTH; EXCLUDING DENTAL"                      
+  "INF000"="INF000 CERTAIN INFECTIOUS AND PARASITIC DISEASES"                
+  "INF004"="INF004 FUNGAL INFECTIONS"                                        
+  "MBD000"="MBD000 MENTAL, BEHAVIORAL AND NEURODEVELOPMENTAL DISORDERS"      
+  "MUS000"="MUS000 DISEASES OF THE MUSCULOSKELETAL SYSTEM AND CONNECTIVE TIS"
+  "NVS020"="NVS020 OTH NERV SYS DISORDERS (NEITHER HEREDITARY OR DEGENERATIV"
+  ;
+VALUE $CCSR4B
+  "-1"    ="-1  INAPPLICABLE"                     
+  "DIG002"="DIG002 DISORDERS OF TEETH AND GINGIVA"
+  "FAC014"="FAC014 MEDICAL EXAMINATION/EVALUATION"
+  ;
+VALUE $CONDIDX  
+  '2460002101001' - '2799700101013' = "VALID ID"
+  ;
+VALUE CONDN  
+  1 - 70 = "1 - 70"
+  ;
+VALUE CONDRN  
+  1 = "1 ROUND 1"
+  2 = "2 ROUND 2"
+  3 = "3 ROUND 3"
+  4 = "4 ROUND 4"
+  5 = "5 ROUND 5"
+  6 = "6 ROUND 6"
+  7 = "7 ROUND 7"
+  8 = "8 ROUND 8"
+  9 = "9 ROUND 9"
+  ;
+VALUE CRND1F  
+  -1 = "-1 INAPPLICABLE"
+  0 = "0 NO"
+  1 = "1 YES"
+  ;
+VALUE CRND2F  
+  -1 = "-1 INAPPLICABLE"
+  0 = "0 NO"
+  1 = "1 YES"
+  ;
+VALUE CRND3F  
+  -1 = "-1 INAPPLICABLE"
+  0 = "0 NO"
+  1 = "1 YES"
+  ;
+VALUE CRND4F  
+  -1 = "-1 INAPPLICABLE"
+  0 = "0 NO"
+  1 = "1 YES"
+  ;
+VALUE CRND5F  
+  -1 = "-1 INAPPLICABLE"
+  0 = "0 NO"
+  1 = "1 YES"
+  ;
+VALUE CRND6F  
+  -1 = "-1 INAPPLICABLE"
+  0 = "0 NO"
+  1 = "1 YES"
+  ;
+VALUE CRND7F  
+  -1 = "-1 INAPPLICABLE"
+  0 = "0 NO"
+  1 = "1 YES"
+  ;
+VALUE CRND8F  
+  -1 = "-1 INAPPLICABLE"
+  0 = "0 NO"
+  1 = "1 YES"
+  ;
+VALUE CRND9F  
+  -1 = "-1 INAPPLICABLE"
+  0 = "0 NO"
+  1 = "1 YES"
+  ;
+VALUE $DUID  
+  '2460002' - '2799700' = "VALID ID"
+  ;
+VALUE $DUPERSI  
+  '2460002101' - '2799700101' = "VALID ID"
+  ;
+VALUE ERCOND  
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE HHCOND  
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE $ICD10CD  
+  '-1' = "-1 INAPPLICABLE"
+  '-15' = "-15 CANNOT BE COMPUTED"
+  'A00' - 'B99' = "A00 - B99"
+  'C00' - 'D49' = "C00 - D49"
+  'D50' - 'D89' = "D50 - D89"
+  'E00' - 'E89' = "E00 - E89"
+  'F01' - 'F99' = "F01 - F99"
+  'G00' - 'G99' = "G00 - G99"
+  'H00' - 'H59' = "H00 - H59"
+  'H60' - 'H95' = "H60 - H95"
+  'I00' - 'I99' = "I00 - I99"
+  'J00' - 'J99' = "J00 - J99"
+  'K00' - 'K95' = "K00 - K95"
+  'L00' - 'L99' = "L00 - L99"
+  'M00' - 'M99' = "M00 - M99"
+  'N00' - 'N99' = "N00 - N99"
+  'O00' - 'O9A' = "O00 - O9A"
+  'P00' - 'P96' = "P00 - P96"
+  'Q00' - 'Q99' = "Q00 - Q99"
+  'R00' - 'R99' = "R00 - R99"
+  'S00' - 'T88' = "S00 - T88"
+  'U00' - 'U99' = "U00 - U85"
+  'V00' - 'Y99' = "V00 - Y99"
+  'Z00' - 'Z99' = "Z00 - Z99"
+  ;
+VALUE ICD10CDB
+  "-15"     ="-15  CANNOT BE COMPUTED"                                        
+  "A08"     ="A08 VIRAL AND OTHER SPECIFIED INTESTINAL INFECTIONS"            
+  "A49"     ="A49 BACTERIAL INFECTION OF UNSPECIFIED SITE"                    
+  "B00"     ="B00 HERPESVIRAL [HERPES SIMPLEX] INFECTIONS"                    
+  "B02"     ="B02 ZOSTER [HERPES ZOSTER]"                                     
+  "B07"     ="B07 VIRAL WARTS"                                                
+  "B34"     ="B34 VIRAL INFECTION OF UNSPECIFIED SITE"                        
+  "B35"     ="B35 DERMATOPHYTOSIS"                                            
+  "B37"     ="B37 CANDIDIASIS"                                                
+  "B99"     ="B99 OTHER AND UNSPECIFIED INFECTIOUS DISEASES"                  
+  "C18"     ="C18 MALIGNANT NEOPLASM OF COLON"                                
+  "C34"     ="C34 MALIGNANT NEOPLASM OF BRONCHUS AND LUNG"                    
+  "C43"     ="C43 MALIGNANT MELANOMA OF SKIN"                                 
+  "C44"     ="C44 OTHER AND UNSPECIFIED MALIGNANT NEOPLASM OF SKIN"           
+  "C50"     ="C50 MALIGNANT NEOPLASM OF BREAST"                               
+  "C61"     ="C61 MALIGNANT NEOPLASM OF PROSTATE"                             
+  "C73"     ="C73 MALIGNANT NEOPLASM OF THYROID GLAND"                        
+  "C85"     ="C85 OTH AND UNSPECIFIED TYPES OF NON-HODGKIN LYMPHOMA"          
+  "D04"     ="D04 CARCINOMA IN SITU OF SKIN"                                  
+  "D22"     ="D22 MELANOCYTIC NEVI"                                           
+  "D48"     ="D48 NEOPLASM OF UNCERTAIN BEHAVIOR OF OTHER AND UNSP SITES"     
+  "D49"     ="D49 NEOPLASMS OF UNSPECIFIED BEHAVIOR"                          
+  "D50"     ="D50 IRON DEFICIENCY ANEMIA"                                     
+  "D64"     ="D64 OTHER ANEMIAS"                                              
+  "E03"     ="E03 OTHER HYPOTHYROIDISM"                                       
+  "E04"     ="E04 OTHER NONTOXIC GOITER"                                      
+  "E05"     ="E05 THYROTOXICOSIS [HYPERTHYROIDISM]"                           
+  "E06"     ="E06 THYROIDITIS"                                                
+  "E07"     ="E07 OTHER DISORDERS OF THYROID"                                 
+  "E11"     ="E11 TYPE 2 DIABETES MELLITUS"                                   
+  "E28"     ="E28 OVARIAN DYSFUNCTION"                                        
+  "E29"     ="E29 TESTICULAR DYSFUNCTION"                                     
+  "E34"     ="E34 OTHER ENDOCRINE DISORDERS"                                  
+  "E53"     ="E53 DEFICIENCY OF OTHER B GROUP VITAMINS"                       
+  "E55"     ="E55 VITAMIN D DEFICIENCY"                                       
+  "E61"     ="E61 DEFICIENCY OF OTHER NUTRIENT ELEMENTS"                      
+  "E66"     ="E66 OVERWEIGHT AND OBESITY"                                     
+  "E78"     ="E78 DISORDERS OF LIPOPROTEIN METABOLISM AND OTHER LIPIDEMIAS"   
+  "E86"     ="E86 VOLUME DEPLETION"                                           
+  "E87"     ="E87 OTHER DISORDERS OF FLUID, ELECTROLYTE AND ACID-BASE BALANCE"
+  "F03"     ="F03 UNSPECIFIED DEMENTIA"                                       
+  "F10"     ="F10 ALCOHOL RELATED DISORDERS"                                  
+  "F20"     ="F20 SCHIZOPHRENIA"                                              
+  "F31"     ="F31 BIPOLAR DISORDER"                                           
+  "F32"     ="F32 DEPRESSIVE EPISODE"                                         
+  "F34"     ="F34 PERSISTENT MOOD [AFFECTIVE] DISORDERS"                      
+  "F39"     ="F39 UNSPECIFIED MOOD [AFFECTIVE] DISORDER"                      
+  "F41"     ="F41 OTHER ANXIETY DISORDERS"                                    
+  "F42"     ="F42 OBSESSIVE-COMPULSIVE DISORDER"                              
+  "F43"     ="F43 REACTION TO SEVERE STRESS, AND ADJUSTMENT DISORDERS"        
+  "F80"     ="F80 SPECIFIC DEVELOPMENTAL DISORDERS OF SPEECH AND LANGUAGE"    
+  "F84"     ="F84 PERVASIVE DEVELOPMENTAL DISORDERS"                          
+  "F90"     ="F90 ATTENTION-DEFICIT HYPERACTIVITY DISORDERS"                  
+  "F99"     ="F99 MENTAL DISORDER, NOT OTHERWISE SPECIFIED"                   
+  "G20"     ="G20 PARKINSON'S DISEASE"                                        
+  "G25"     ="G25 OTHER EXTRAPYRAMIDAL AND MOVEMENT DISORDERS"                
+  "G35"     ="G35 MULTIPLE SCLEROSIS"                                         
+  "G40"     ="G40 EPILEPSY AND RECURRENT SEIZURES"                            
+  "G43"     ="G43 MIGRAINE"                                                   
+  "G45"     ="G45 TRANSIENT CEREBRAL ISCHEMIC ATTACKS AND RELATED SYNDROMES"  
+  "G47"     ="G47 SLEEP DISORDERS"                                            
+  "G56"     ="G56 MONONEUROPATHIES OF UPPER LIMB"                             
+  "G57"     ="G57 MONONEUROPATHIES OF LOWER LIMB"                             
+  "G58"     ="G58 OTHER MONONEUROPATHIES"                                     
+  "G62"     ="G62 OTHER AND UNSPECIFIED POLYNEUROPATHIES"                     
+  "G89"     ="G89 PAIN, NOT ELSEWHERE CLASSIFIED"                             
+  "H00"     ="H00 HORDEOLUM AND CHALAZION"                                    
+  "H02"     ="H02 OTHER DISORDERS OF EYELID"                                  
+  "H04"     ="H04 DISORDERS OF LACRIMAL SYSTEM"                               
+  "H10"     ="H10 CONJUNCTIVITIS"                                             
+  "H26"     ="H26 OTHER CATARACT"                                             
+  "H33"     ="H33 RETINAL DETACHMENTS AND BREAKS"                             
+  "H35"     ="H35 OTHER RETINAL DISORDERS"                                    
+  "H40"     ="H40 GLAUCOMA"                                                   
+  "H43"     ="H43 DISORDERS OF VITREOUS BODY"                                 
+  "H44"     ="H44 DISORDERS OF GLOBE"                                         
+  "H52"     ="H52 DISORDERS OF REFRACTION AND ACCOMMODATION"                  
+  "H53"     ="H53 VISUAL DISTURBANCES"                                        
+  "H54"     ="H54 BLINDNESS AND LOW VISION"                                   
+  "H57"     ="H57 OTHER DISORDERS OF EYE AND ADNEXA"                          
+  "H61"     ="H61 OTHER DISORDERS OF EXTERNAL EAR"                            
+  "H66"     ="H66 SUPPURATIVE AND UNSPECIFIED OTITIS MEDIA"                   
+  "H91"     ="H91 OTHER AND UNSPECIFIED HEARING LOSS"                         
+  "H92"     ="H92 OTALGIA AND EFFUSION OF EAR"                                
+  "H93"     ="H93 OTHER DISORDERS OF EAR, NOT ELSEWHERE CLASSIFIED"           
+  "I10"     ="I10 ESSENTIAL (PRIMARY) HYPERTENSION"                           
+  "I20"     ="I20 ANGINA PECTORIS"                                            
+  "I21"     ="I21 ACUTE MYOCARDIAL INFARCTION"                                
+  "I25"     ="I25 CHRONIC ISCHEMIC HEART DISEASE"                             
+  "I26"     ="I26 PULMONARY EMBOLISM"                                         
+  "I38"     ="I38 ENDOCARDITIS, VALVE UNSPECIFIED"                            
+  "I48"     ="I48 ATRIAL FIBRILLATION AND FLUTTER"                            
+  "I49"     ="I49 OTHER CARDIAC ARRHYTHMIAS"                                  
+  "I50"     ="I50 HEART FAILURE"                                              
+  "I51"     ="I51 COMPLICATIONS AND ILL-DEFINED DESCRIPTIONS OF HEART DISEASE"
+  "I63"     ="I63 CEREBRAL INFARCTION"                                        
+  "I74"     ="I74 ARTERIAL EMBOLISM AND THROMBOSIS"                           
+  "I83"     ="I83 VARICOSE VEINS OF LOWER EXTREMITIES"                        
+  "I95"     ="I95 HYPOTENSION"                                                
+  "I99"     ="I99 OTHER AND UNSPECIFIED DISORDERS OF CIRCULATORY SYSTEM"      
+  "J00"     ="J00 ACUTE NASOPHARYNGITIS [COMMON COLD]"                        
+  "J02"     ="J02 ACUTE PHARYNGITIS"                                          
+  "J06"     ="J06 ACUTE UPPER RESP INFECTIONS OF MULTIPLE AND UNSP SITES"     
+  "J11"     ="J11 INFLUENZA DUE TO UNIDENTIFIED INFLUENZA VIRUS"              
+  "J18"     ="J18 PNEUMONIA, UNSPECIFIED ORGANISM"                            
+  "J20"     ="J20 ACUTE BRONCHITIS"                                           
+  "J30"     ="J30 VASOMOTOR AND ALLERGIC RHINITIS"                            
+  "J32"     ="J32 CHRONIC SINUSITIS"                                          
+  "J34"     ="J34 OTHER AND UNSPECIFIED DISORDERS OF NOSE AND NASAL SINUSES"  
+  "J39"     ="J39 OTHER DISEASES OF UPPER RESPIRATORY TRACT"                  
+  "J40"     ="J40 BRONCHITIS, NOT SPECIFIED AS ACUTE OR CHRONIC"              
+  "J42"     ="J42 UNSPECIFIED CHRONIC BRONCHITIS"                             
+  "J43"     ="J43 EMPHYSEMA"                                                  
+  "J44"     ="J44 OTHER CHRONIC OBSTRUCTIVE PULMONARY DISEASE"                
+  "J45"     ="J45 ASTHMA"                                                     
+  "J98"     ="J98 OTHER RESPIRATORY DISORDERS"                                
+  "K04"     ="K04 DISEASES OF PULP AND PERIAPICAL TISSUES"                    
+  "K08"     ="K08 OTHER DISORDERS OF TEETH AND SUPPORTING STRUCTURES"         
+  "K13"     ="K13 OTHER DISEASES OF LIP AND ORAL MUCOSA"                      
+  "K21"     ="K21 GASTRO-ESOPHAGEAL REFLUX DISEASE"                           
+  "K22"     ="K22 OTHER DISEASES OF ESOPHAGUS"                                
+  "K25"     ="K25 GASTRIC ULCER"                                              
+  "K29"     ="K29 GASTRITIS AND DUODENITIS"                                   
+  "K30"     ="K30 FUNCTIONAL DYSPEPSIA"                                       
+  "K31"     ="K31 OTHER DISEASES OF STOMACH AND DUODENUM"                     
+  "K44"     ="K44 DIAPHRAGMATIC HERNIA"                                       
+  "K46"     ="K46 UNSPECIFIED ABDOMINAL HERNIA"                               
+  "K50"     ="K50 CROHN'S DISEASE [REGIONAL ENTERITIS]"                       
+  "K52"     ="K52 OTHER AND UNSP NONINFECTIVE GASTROENTERITIS AND COLITIS"     
+  "K57"     ="K57 DIVERTICULAR DISEASE OF INTESTINE"                           
+  "K58"     ="K58 IRRITABLE BOWEL SYNDROME"                                    
+  "K59"     ="K59 OTHER FUNCTIONAL INTESTINAL DISORDERS"                       
+  "K63"     ="K63 OTHER DISEASES OF INTESTINE"                                 
+  "K64"     ="K64 HEMORRHOIDS AND PERIANAL VENOUS THROMBOSIS"                  
+  "K76"     ="K76 OTHER DISEASES OF LIVER"                                     
+  "K80"     ="K80 CHOLELITHIASIS"                                              
+  "K82"     ="K82 OTHER DISEASES OF GALLBLADDER"                               
+  "K85"     ="K85 ACUTE PANCREATITIS"                                          
+  "K92"     ="K92 OTHER DISEASES OF DIGESTIVE SYSTEM"                          
+  "L02"     ="L02 CUTANEOUS ABSCESS, FURUNCLE AND CARBUNCLE"                   
+  "L03"     ="L03 CELLULITIS AND ACUTE LYMPHANGITIS"                           
+  "L08"     ="L08 OTHER LOCAL INFECTIONS OF SKIN AND SUBCUTANEOUS TISSUE"      
+  "L23"     ="L23 ALLERGIC CONTACT DERMATITIS"                                 
+  "L29"     ="L29 PRURITUS"                                                    
+  "L30"     ="L30 OTHER AND UNSPECIFIED DERMATITIS"                            
+  "L40"     ="L40 PSORIASIS"                                                   
+  "L60"     ="L60 NAIL DISORDERS"                                              
+  "L65"     ="L65 OTHER NONSCARRING HAIR LOSS"                                 
+  "L70"     ="L70 ACNE"                                                        
+  "L71"     ="L71 ROSACEA"                                                     
+  "L72"     ="L72 FOLLICULAR CYSTS OF SKIN AND SUBCUTANEOUS TISSUE"            
+  "L84"     ="L84 CORNS AND CALLOSITIES"                                       
+  "L91"     ="L91 HYPERTROPHIC DISORDERS OF SKIN"                              
+  "L98"     ="L98 OTH DISORDERS OF SKIN, SUBCU, NOT ELSEWHERE CLASSIFIED"      
+  "M06"     ="M06 OTHER RHEUMATOID ARTHRITIS"                                  
+  "M10"     ="M10 GOUT"                                                        
+  "M17"     ="M17 OSTEOARTHRITIS OF KNEE"                                      
+  "M19"     ="M19 OTHER AND UNSPECIFIED OSTEOARTHRITIS"                        
+  "M21"     ="M21 OTHER ACQUIRED DEFORMITIES OF LIMBS"                         
+  "M25"     ="M25 OTHER JOINT DISORDER, NOT ELSEWHERE CLASSIFIED"              
+  "M32"     ="M32 SYSTEMIC LUPUS ERYTHEMATOSUS (SLE)"                          
+  "M35"     ="M35 OTHER SYSTEMIC INVOLVEMENT OF CONNECTIVE TISSUE"             
+  "M41"     ="M41 SCOLIOSIS"                                                   
+  "M43"     ="M43 OTHER DEFORMING DORSOPATHIES"                                
+  "M48"     ="M48 OTHER SPONDYLOPATHIES"                                       
+  "M50"     ="M50 CERVICAL DISC DISORDERS"                                     
+  "M51"     ="M51 THORACIC, THORACOLUM, AND LUMBOSACRAL INTVRT DISC DISORDERS" 
+  "M53"     ="M53 OTHER AND UNSPECIFIED DORSOPATHIES, NOT ELSEWHERE CLASSIFIED"
+  "M54"     ="M54 DORSALGIA"                                                   
+  "M62"     ="M62 OTHER DISORDERS OF MUSCLE"                                   
+  "M65"     ="M65 SYNOVITIS AND TENOSYNOVITIS"                                 
+  "M71"     ="M71 OTHER BURSOPATHIES"                                          
+  "M72"     ="M72 FIBROBLASTIC DISORDERS"                                      
+  "M75"     ="M75 SHOULDER LESIONS"                                            
+  "M77"     ="M77 OTHER ENTHESOPATHIES"                                        
+  "M79"     ="M79 OTH AND UNSP SOFT TISSUE DISORDERS, NOT ELSEWHERE CLASSIFIED"
+  "M81"     ="M81 OSTEOPOROSIS WITHOUT CURRENT PATHOLOGICAL FRACTURE"          
+  "M85"     ="M85 OTHER DISORDERS OF BONE DENSITY AND STRUCTURE"               
+  "M89"     ="M89 OTHER DISORDERS OF BONE"                                     
+  "N15"     ="N15 OTHER RENAL TUBULO-INTERSTITIAL DISEASES"                    
+  "N18"     ="N18 CHRONIC KIDNEY DISEASE (CKD)"                                
+  "N19"     ="N19 UNSPECIFIED KIDNEY FAILURE"                                  
+  "N20"     ="N20 CALCULUS OF KIDNEY AND URETER"                               
+  "N28"     ="N28 OTH DISORDERS OF KIDNEY AND URETER, NOT ELSEWHERE CLASSIFIED"
+  "N30"     ="N30 CYSTITIS"                                                    
+  "N32"     ="N32 OTHER DISORDERS OF BLADDER"                                  
+  "N39"     ="N39 OTHER DISORDERS OF URINARY SYSTEM"                           
+  "N40"     ="N40 BENIGN PROSTATIC HYPERPLASIA"                                
+  "N42"     ="N42 OTHER AND UNSPECIFIED DISORDERS OF PROSTATE"                 
+  "N52"     ="N52 MALE ERECTILE DYSFUNCTION"                                   
+  "N63"     ="N63 UNSPECIFIED LUMP IN BREAST"                                  
+  "N64"     ="N64 OTHER DISORDERS OF BREAST"                                   
+  "N76"     ="N76 OTHER INFLAMMATION OF VAGINA AND VULVA"                     
+  "N81"     ="N81 FEMALE GENITAL PROLAPSE"                                    
+  "N83"     ="N83 NONINFLAMMATORY DISORD OF OVARY, FALLOP AND BROAD LIGAMENT" 
+  "N89"     ="N89 OTHER NONINFLAMMATORY DISORDERS OF VAGINA"                  
+  "N92"     ="N92 EXCESSIVE, FREQUENT AND IRREGULAR MENSTRUATION"             
+  "N94"     ="N94 PAIN AND OTH COND ASSOC W FEM GNTL ORG AND MENSTRUAL CYCLE" 
+  "N95"     ="N95 MENOPAUSAL AND OTHER PERIMENOPAUSAL DISORDERS"              
+  "R00"     ="R00 ABNORMALITIES OF HEART BEAT"                                
+  "R01"     ="R01 CARDIAC MURMURS AND OTHER CARDIAC SOUNDS"                   
+  "R03"     ="R03 ABNORMAL BLOOD-PRESSURE READING, WITHOUT DIAGNOSIS"         
+  "R05"     ="R05 COUGH"                                                      
+  "R06"     ="R06 ABNORMALITIES OF BREATHING"                                 
+  "R07"     ="R07 PAIN IN THROAT AND CHEST"                                   
+  "R09"     ="R09 OTH SYMPTOMS AND SIGNS INVOLVING THE CIRC AND RESP SYS"     
+  "R10"     ="R10 ABDOMINAL AND PELVIC PAIN"                                  
+  "R11"     ="R11 NAUSEA AND VOMITING"                                        
+  "R12"     ="R12 HEARTBURN"                                                  
+  "R19"     ="R19 OTH SYMPTOMS AND SIGNS INVOLVING THE DGSTV SYS AND ABDOMEN" 
+  "R20"     ="R20 DISTURBANCES OF SKIN SENSATION"                             
+  "R21"     ="R21 RASH AND OTHER NONSPECIFIC SKIN ERUPTION"                   
+  "R22"     ="R22 LOCALIZED SWELLING, MASS AND LUMP OF SKIN, SUBCU"           
+  "R25"     ="R25 ABNORMAL INVOLUNTARY MOVEMENTS"                             
+  "R26"     ="R26 ABNORMALITIES OF GAIT AND MOBILITY"                         
+  "R32"     ="R32 UNSPECIFIED URINARY INCONTINENCE"                           
+  "R33"     ="R33 RETENTION OF URINE"                                         
+  "R35"     ="R35 POLYURIA"                                                   
+  "R39"     ="R39 OTH AND UNSP SYMPTOMS AND SIGNS INVOLVING THE GU SYS"       
+  "R41"     ="R41 OTH SYMPTOMS AND SIGNS W COGNITIVE FUNCTIONS AND AWARENESS" 
+  "R42"     ="R42 DIZZINESS AND GIDDINESS"                                    
+  "R47"     ="R47 SPEECH DISTURBANCES, NOT ELSEWHERE CLASSIFIED"              
+  "R50"     ="R50 FEVER OF OTHER AND UNKNOWN ORIGIN"                          
+  "R51"     ="R51 HEADACHE"                                                   
+  "R52"     ="R52 PAIN, UNSPECIFIED"                                          
+  "R53"     ="R53 MALAISE AND FATIGUE"                                        
+  "R54"     ="R54 AGE-RELATED PHYSICAL DEBILITY"                              
+  "R55"     ="R55 SYNCOPE AND COLLAPSE"                                       
+  "R56"     ="R56 CONVULSIONS, NOT ELSEWHERE CLASSIFIED"                      
+  "R60"     ="R60 EDEMA, NOT ELSEWHERE CLASSIFIED"                            
+  "R63"     ="R63 SYMPTOMS AND SIGNS CONCERNING FOOD AND FLUID INTAKE"        
+  "R73"     ="R73 ELEVATED BLOOD GLUCOSE LEVEL"                               
+  "R79"     ="R79 OTHER ABNORMAL FINDINGS OF BLOOD CHEMISTRY"                 
+  "R87"     ="R87 ABNORMAL FINDINGS IN SPECIMENS FROM FEMALE GENITAL ORGANS"  
+  "R91"     ="R91 ABNORMAL FINDINGS ON DIAGNOSTIC IMAGING OF LUNG"            
+  "S01"     ="S01 OPEN WOUND OF HEAD"                                         
+  "S06"     ="S06 INTRACRANIAL INJURY"                                        
+  "S09"     ="S09 OTHER AND UNSPECIFIED INJURIES OF HEAD"                     
+  "S29"     ="S29 OTHER AND UNSPECIFIED INJURIES OF THORAX"                   
+  "S32"     ="S32 FRACTURE OF LUMBAR SPINE AND PELVIS"                        
+  "S39"     ="S39 OTH & UNSP INJURIES OF ABD, LOW BACK, PELV & EXTRN GENITALS"
+  "S42"     ="S42 FRACTURE OF SHOULDER AND UPPER ARM"                         
+  "S46"     ="S46 INJURY OF MUSCLE, FASCIA AND TENDON AT SHLDR/UP ARM"        
+  "S49"     ="S49 OTHER AND UNSPECIFIED INJURIES OF SHOULDER AND UPPER ARM"   
+  "S61"     ="S61 OPEN WOUND OF WRIST, HAND AND FINGERS"                      
+  "S62"     ="S62 FRACTURE AT WRIST AND HAND LEVEL"                           
+  "S69"     ="S69 OTHER AND UNSPECIFIED INJURIES OF WRIST, HAND AND FINGER(S)"
+  "S82"     ="S82 FRACTURE OF LOWER LEG, INCLUDING ANKLE"                     
+  "S83"     ="S83 DISLOCATION AND SPRAIN OF JOINTS AND LIGAMENTS OF KNEE"     
+  "S89"     ="S89 OTHER AND UNSPECIFIED INJURIES OF LOWER LEG"                
+  "S92"     ="S92 FRACTURE OF FOOT AND TOE, EXCEPT ANKLE"                     
+  "S93"     ="S93 DISLOC & SPRAIN OF JOINTS & LIGAMENTS AT ANKL, FT & TOE LEV"
+  "S99"     ="S99 OTHER AND UNSPECIFIED INJURIES OF ANKLE AND FOOT"           
+  "T14"     ="T14 INJURY OF UNSPECIFIED BODY REGION"                          
+  "T63"     ="T63 TOXIC EFFECT OF CONTACT WITH VENOMOUS ANIMALS AND PLANTS"   
+  "T78"     ="T78 ADVERSE EFFECTS, NOT ELSEWHERE CLASSIFIED"                  
+  "T88"     ="T88 OTH COMPLICATIONS OF SURGICAL AND MEDICAL CARE, NEC"         
+  "U07"     ="U07 EMERGENCY USE OF U07"                                        
+  "Z00"     ="Z00 ENCNTR FOR GENERAL EXAM W/O COMPLAINT, SUSP OR REPRTD DX"    
+  "Z01"     ="Z01 ENCNTR FOR OTH SP EXAM W/O COMPLAINT, SUSPECTED OR REPRTD DX"
+  "Z04"     ="Z04 ENCOUNTER FOR EXAMINATION AND OBSERVATION FOR OTHER REASONS" 
+  "Z09"     ="Z09 ENCNTR FOR F/U EXAM AFT TRTMT FOR COND OTH THAN MALIG NEOPLM"
+  "Z12"     ="Z12 ENCOUNTER FOR SCREENING FOR MALIGNANT NEOPLASMS"             
+  "Z13"     ="Z13 ENCOUNTER FOR SCREENING FOR OTHER DISEASES AND DISORDERS"    
+  "Z20"     ="Z20 CONTACT W AND (SUSPECTED) EXPOSURE TO COMMUNICABLE DISEASES" 
+  "Z21"     ="Z21 ASYMPTOMATIC HUMAN IMMUNODEFICIENCY VIRUS INFECTION STATUS"  
+  "Z23"     ="Z23 ENCOUNTER FOR IMMUNIZATION"                                  
+  "Z29"     ="Z29 ENCOUNTER FOR OTHER PROPHYLACTIC MEASURES"                   
+  "Z30"     ="Z30 ENCOUNTER FOR CONTRACEPTIVE MANAGEMENT"                      
+  "Z34"     ="Z34 ENCOUNTER FOR SUPERVISION OF NORMAL PREGNANCY"               
+  "Z38"     ="Z38 LIVEBORN INFANTS ACCORDING TO PLACE OF BIRTH AND TYPE OF DEL"
+  "Z48"     ="Z48 ENCOUNTER FOR OTHER POSTPROCEDURAL AFTERCARE"                
+  "Z51"     ="Z51 ENCOUNTER FOR OTHER AFTERCARE AND MEDICAL CARE"              
+  "Z63"     ="Z63 OTH PROB REL TO PRIM SUPPORT GROUP, INC FAMILY CIRCUMSTANCES"
+  "Z71"     ="Z71 PERSONS ENCNTR HEALTH SERV FOR OTH CNSL AND MED ADVICE, NEC" 
+  "Z76"     ="Z76 PERSONS ENCOUNTERING HEALTH SERVICES IN OTHER CIRCUMSTANCES" 
+  "Z79"     ="Z79 LONG TERM (CURRENT) DRUG THERAPY"                            
+  "Z91"     ="Z91 PERSONAL RISK FACTORS, NOT ELSEWHERE CLASSIFIED"             
+  "Z95"     ="Z95 PRESENCE OF CARDIAC AND VASCULAR IMPLANTS AND GRAFTS"        
+  "Z96"     ="Z96 PRESENCE OF OTHER FUNCTIONAL IMPLANTS"                       
+  "Z97"     ="Z97 PRESENCE OF OTHER DEVICES"     
+  ;
+VALUE INJURY  
+  -15 = "-15 CANNOT BE COMPUTED"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE IPCOND  
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE OBCOND  
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE OPCOND  
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE PANELF  
+  24 = "24 PANEL 24"
+  26 = "26 PANEL 26"
+  27 = "27 PANEL 27"
+  ;
+VALUE PERWT22F  
+  0 = "0.000000"
+  342.439212 - 106198.676667 = "342.439212 - 106198.676667"
+  ;
+VALUE PID  
+  101 - 501 = "VALID ID"
+  ;
+VALUE RXCOND  
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE VARPSU  
+  1 - 8 = "1 - 8"
+  ;
+VALUE VARSTR  
+  2001 - 2117 = "2001 - 2117"
+  ;

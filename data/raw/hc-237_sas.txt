@@ -1,0 +1,1199 @@
+SAS User File for H237 Data                                                                   
+                                                                                                    
+This file contains information and sample SAS programs to create a permanent                        
+SAS dataset for users who want to use SAS in processing the MEPS data                               
+provided in this PUF release.                                                                       
+                                                                                                    
+There are two ways to create a permanent SAS dataset, using either the SAS                          
+transport data file (H237.SSP) or the ASCII data file (H237.DAT)                        
+supplied in this PUF release. Section A provides a sample SAS program for the                       
+first alternative, which is to convert the SAS transport data file to a                             
+regular SAS dataset using the SAS procedure: CIMPORT. Section B provides a                          
+sample SAS program for the second alternative, which is to read data from the                       
+ASCII data file using a SAS DATA step with INFILE, INPUT, and LABEL                                 
+statements. Section C explains format-related SAS statements that a user may                        
+optionally use when working with the SAS dataset. Examples of SAS programs                          
+(DATA step or PROC) are provided in all three sections, primarily for the                           
+benefit of inexperienced users. Section D contains complete SAS statements                          
+that must be used in the programs described in Sections B and C.                                    
+                                                                                                    
+******************************************************************************                      
+                                                                                                    
+The sample SAS programs provided in Sections A and B show how to create a                           
+permanent SAS dataset from the data files provided in this PUF release.                             
+                                                                                                    
+A. A Sample SAS Program for Converting the SAS Transport File to a                                  
+Permanent SAS Dataset                                                                               
+                                                                                                    
+The SAS procedure CIMPORT will read a SAS transport file and convert the                            
+data to regular SAS format, storing the output in a permanent SAS dataset.                          
+This permanent SAS dataset can then be used for all future processing and                           
+analyses.                                                                                           
+                                                                                                    
+Below is a sample SAS program that can be used to convert the SAS transport                         
+file to a permanent SAS dataset (in a Windows environment).                                         
+                                                                                                    
+     LIBNAME PUFLIB 'C:\MEPS\SASDATA';                                                              
+     FILENAME IN1 'C:\MEPS\DOWNLOAD\H237.SSP';                                                
+                                                                                                    
+     PROC CIMPORT DATA=PUFLIB.H237 INFILE=IN1;                                                
+     RUN;                                                                                           
+                                                                                                    
+                                                                                                    
+Below are SAS statements to print a list of variables and a few sample records                      
+from the permanent SAS dataset:                                                                     
+                                                                                                    
+     PROC CONTENTS DATA=PUFLIB.H237;                                                          
+     TITLE 'List of Variables in MEPS H237 SAS Dataset';                                      
+     RUN;                                                                                           
+                                                                                                    
+     PROC PRINT DATA=PUFLIB.H237 (OBS=20);                                                    
+     TITLE 'First 20 Observations in MEPS H237 SAS Dataset';                                  
+     RUN;                                                                                           
+                                                                                                    
+The LIBNAME statement tells SAS the location (directory name) to store the                          
+permanent SAS dataset which is output by PROC CIMPORT.  The FILENAME statement                      
+tells SAS the location (complete directory and file name) of the input SAS                          
+transport data file.                                                                                
+                                                                                                    
+NOTES:                                                                                              
+                                                                                                    
+     1)  The names used in the LIBNAME and FILENAME statements shown                                
+     above (i.e., PUFLIB, IN1) are arbitrary; they are only temporary                               
+     aliases.                                                                                       
+                                                                                                    
+     2)  The directory and file names used in the LIBNAME and FILENAME                              
+     statements shown above are Windows syntax and may need to be                                   
+     modified for other operating systems such as UNIX and Linux.                                   
+                                                                                                    
+     3)  H237 is the internal SAS dataset name (also the PC file name,                        
+     without the extension) prior to the creation of the SAS transport data                         
+     file.  After running PROC CIMPORT, the output SAS dataset assumes the same                     
+     dataset name (or file name).  Hence, in the example above, a file named                        
+     H237.SAS7BDAT will be created under the C:\MEPS\SASDATA directory when                   
+     PROC CIMPORT runs successfully.                                                                
+                                                                                                    
+     4)  The SAS transport file H237.SSP was created from a SAS V9                            
+     data file, using PROC CPORT.  This file should work with earlier versions of                   
+     SAS, although it has not been tested with those versions. Users who are                        
+     unable to use this SAS transport file should instead convert the ASCII                         
+     data file H237.DAT to a SAS dataset as described in Section B.                           
+                                                                                                    
+                                                                                                    
+B.     A Sample SAS Program for Converting the ASCII Data File to a Permanent                       
+SAS Dataset                                                                                         
+                                                                                                    
+The complete SAS statements (INPUT and LABEL) included in Section D are                             
+intended to save time for those users wishing to create a permanent SAS                             
+dataset from the H237.DAT ASCII data file.  These statements must be used                     
+in combination with other SAS statements to create the appropriate SAS                              
+program, as shown below.  To use the statements provided in Section D to                            
+create a SAS program, you will need an ASCII text editor.  If you are using an                      
+interactive form of SAS (Windows, UNIX, Linux, etc.), use the editor provided as                    
+part of the SAS software.                                                                           
+                                                                                                    
+Following is a sample Windows SAS program that will convert the ASCII data file to SAS              
+format:                                                                                             
+                                                                                                    
+     LIBNAME PUFLIB 'C:\MEPS\SASDATA';                                                              
+     FILENAME IN1 'C:\MEPS\DOWNLOAD\H237.DAT';                                                
+                                                                                                    
+     DATA PUFLIB.H237;                                                                        
+     INFILE IN1 LRECL=280;                                                                     
+     INPUT .....; * to user: insert the complete INPUT statement that is                            
+provided in Section D;                                                                              
+     LABEL .....; * to user: insert the complete LABEL statement that is                            
+provided in Section D;                                                                              
+     RUN;                                                                                           
+                                                                                                    
+Here is an explanation of the SAS statements used in the program above.                             
+                                                                                                    
+LIBNAME statement: This tells SAS the location (directory name) of the                              
+permanent SAS dataset.                                                                              
+                                                                                                    
+FILENAME statement: This tells SAS the location of the input ASCII data file.                       
+                                                                                                    
+DATA statement: This signifies the beginning of a SAS DATA step and specifies                       
+the output SAS dataset, referencing the LIBNAME entry (PUFLIB) and assigning                        
+an internal SAS dataset name (H237).  In the example, after the successful                    
+completion of the DATA step, a PC file named H237.SAS7BDAT would have                         
+been created in the C:\MEPS\SASDATA directory.                                                      
+                                                                                                    
+INFILE statement: This tells SAS the location (directory and file name) of the                      
+input ASCII data file.  Also provided is the logical record length (280                        
+bytes), with the default of RECFM=V implied when this parameter is omitted.                         
+LRECL and RECFM are optional parameters in the INFILE statement.  With regard                       
+to these options, please note the following: the ASCII data file H237.DAT                     
+contains a 2-byte carriage return/line feed at the end of each record.  When                        
+converting to a PC-SAS file, the LRECL option should be used to specify the                         
+record length to avoid use of a default record length by PC-SAS.  If the                            
+RECFM=V option is used, the LRECL option must be specified as the logical                           
+record length (e.g., 280 for H237.DAT).  If RECFM=F is used, then the                    
+LRECL value must  be specified as the logical record length plus 2 (282 for            
+H237.DAT).  Note that if the RECFM option is omitted, then the default                        
+option of RECFM=V is automatically used, and LRECL should be specified as the                       
+logical record (280 for H237.DAT).                                                       
+                                                                                                    
+INPUT statement: This specifies the input record layout, giving names, the                          
+beginning column positions, and the lengths for data items (which become SAS                        
+variables) in the ASCII data file (H237.DAT).  Variable type (numeric or                      
+character) is also defined by character variables having a dollar sign ($) directly                 
+before the variables length, while numeric variables do not have a dollar sign.                     
+                                                                                                    
+LABEL statement: This associates descriptive names with the SAS variables.                          
+                                                                                                    
+RUN statement: This tells SAS to execute all commands up to this point.                             
+                                                                                                    
+                                                                                                    
+C.     Optional Format-related SAS Statements                                                       
+                                                                                                    
+If a user wants to use formats for the SAS variables, a SAS format                                  
+catalog must first be created.  Below is a SAS program that will accomplish this:                   
+                                                                                                    
+     LIBNAME PUFLIB 'C:\MEPS\SASDATA';                                                              
+                                                                                                    
+     PROC FORMAT LIBRARY=PUFLIB;                                                                    
+     VALUE .....; * to user: insert the complete set of VALUE statements found                      
+in Section D;                                                                                       
+     VALUE .....;                                                                                   
+     .......... ;                                                                                   
+     RUN;                                                                                           
+                                                                                                    
+                                                                                                    
+Below is an example of how to use the SAS formats defined by the PROC FORMAT                        
+procedure:                                                                                          
+                                                                                                    
+     LIBNAME PUFLIB 'C:\MEPS\SASDATA';                                                              
+     OPTIONS FMTSEARCH=(PUFLIB);                                                                    
+                                                                                                    
+     PROC FREQ DATA=PUFLIB.H237;                                                              
+     TABLES .... / LIST MISSING;                                                                    
+     FORMAT varnam1 fmtnam1.  Varnam2 fmtnam2.  .... ;                                              
+     * to user: substitute varnam1 and fmtnam1 with actual variable names and                       
+format names;                                                                                       
+     *     Insert the FORMAT statement provided in Section D, if you are using                      
+all the variables in the TABLES statement;                                                          
+     TITLE 'Frequency Distributions ....';                                                          
+     RUN;                                                                                           
+                                                                                                    
+Here is an explanation of the SAS statements used above.                                            
+                                                                                                    
+LIBNAME statement: This tells SAS the location (directory name) of the SAS                          
+format library.  Please note that SAS datasets (file name extension is                              
+'SAS7BDAT') and format                                                                              
+catalog (file name extension is 'SAS7BCAT') can be stored under the same directory.                 
+                                                                                                    
+OPTIONS FMTSEARCH=...: This specifies the SAS format library.                                       
+                                                                                                    
+PROC FORMAT statement: This identifies the SAS procedure that will make SAS                         
+formats according to VALUE statements.  Formats will be stored in a file named                      
+FORMATS.SAS7BCAT.  Please note that the option 'LIBRARY=...' can be omitted                         
+if the user does not want to create a permanent SAS format library. When simply                     
+'PROC FORMAT;' is used, the formats are defined only for the duration of the                        
+batch SAS program or an interactive SAS session.                                                    
+                                                                                                    
+VALUE statement: This gives a) names to formats; and b) descriptive labels for                      
+individual values, or range of values.  The format names can then be invoked                        
+using a FORMAT statement if desired.                                                                
+                                                                                                    
+PROC FREQ statement: This identifies the SAS procedure that generates                               
+frequency distributions of variables specified in the TABLES statement,                             
+formatted if a FORMAT statement is used.  The input SAS dataset is specified                        
+in the 'DATA=' option.                                                                              
+                                                                                                    
+FORMAT statement: This associates existing formats with variables.  When using                      
+this statement, the formats must have already been created with a PROC FORMAT                       
+procedure.                                                                                          
+                                                                                                    
+RUN statement: This tells SAS to execute all commands up to this point.                             
+                                                                                                    
+                                                                                                    
+NOTES:                                                                                              
+                                                                                                    
+     1)  Use of formats is entirely optional, and depends on the types                              
+     of analyses that you are doing.  It is recommended that you create                             
+     and use them as appropriate.                                                                   
+                                                                                                    
+     2)  The names used in the LIBNAME and FILENAME statements shown                                
+     above (i.e., PUFLIB, IN1) are arbitrary; they are only temporary                               
+     aliases.                                                                                       
+                                                                                                    
+     3)  The file and directory specifications in the LIBNAME and                                   
+     FILENAME statements are Windows syntax and may need to be modified                             
+     for other operating systems such as UNIX and Linux.                                            
+                                                                                                    
+                                                                                                    
+D.  SAS Statements                                                                                  
+                                                                                                    
+This section contains SAS INPUT, LABEL, FORMAT, and VALUE statements for use in                     
+converting the ASCII H237.DAT file into a SAS dataset, and for creating                       
+SAS formats.                                                                                        
+                                                                                                    
+* INPUT STATEMENTS;
+INFILE IN LRECL=280;
+
+INPUT @1      JOBSIDX                          $14.0
+      @15     JOBIDX                           $13.0
+      @28     JOBNUM                           $3.0
+      @31     ESTBIDX                          $11.0
+      @42     DUPERSID                         $10.0
+      @52     DUID                             $7.0
+      @59     PID                               3.0
+      @62     RN                                1.0
+      @63     OrigRnd                           1.0
+      @64     PANEL                             2.0
+      @66     JSTRTM                            2.0
+      @68     JSTRTY                            4.0
+      @72     JSTOPM                            2.0
+      @74     JSTOPY                            4.0
+      @78     RETIRJOB                          1.0
+      @79     SUBTYPE                           1.0
+      @80     STILLAT                           2.0
+      @82     TYPECHGD                          2.0
+      @84     MAIN_JOB                          2.0
+      @86     DIFFWAGE                          2.0
+      @88     StillWorkFTPT                     2.0
+      @90     WhyChngPTToFT                     2.0
+      @92     WhyChngFTToPT                     2.0
+      @94     STILLWRK                          2.0
+      @96     OFFTAKEI                          2.0
+      @98     NOWTAKEI_M22                      2.0
+      @100    ESTBTHRU                          2.0
+      @102    INSESTB                           2.0
+      @104    HIDISAVW                         $4.0
+      @108    RvwTotNumEmp                      5.0
+      @113    WHY_LEFT_M18                      2.0
+      @115    JOBTYPE                           2.0
+      @117    NUMEMPS                           5.0
+      @122    ESTMATE1_M19                      2.0
+      @124    MORELOC                           2.0
+      @126    BUSINC                            2.0
+      @128    PROPRIET                          2.0
+      @130    TYPEEMPL                          2.0
+      @132    YLEFT_M18                         2.0
+      @134    YNOBUSN_M18                       2.0
+      @136    HRSPRWK                           3.0
+      @139    HRS35WK                           2.0
+      @141    TEMPJOB                           2.0
+      @143    SESNLJOB                          2.0
+      @145    SICKPAY                           2.0
+      @147    PAYDRVST                          2.0
+      @149    PAYVACTN                          2.0
+      @151    RETIRPLN                          2.0
+      @153    WKLYAMT                           7.2
+      @160    EMPLINS                           2.0
+      @162    JOBHASHI                          2.0
+      @164    OFFRDINS                          2.0
+      @166    DIFFPLNS                          2.0
+      @168    ANYINS                            2.0
+      @170    INUNION                           2.0
+      @172    PROVDINS                          2.0
+      @174    EmplUnionProv                     2.0
+      @176    HHMEMBER_M18                      2.0
+      @178    TOTLEMP_M18                       5.0
+      @183    TotNumEmp                         5.0
+      @188    SALARIED                          2.0
+      @190    HOWPAID                           2.0
+      @192    DAYWAGE                           6.2
+      @198    HRSPRDY                           2.0
+      @200    MAKEAMT                           9.2
+      @209    PERUNIT_M18                       2.0
+      @211    HRLYWAGE                          6.2
+      @217    MORE10                            2.0
+      @219    MORE15                            2.0
+      @221    MOREMINM                          2.0
+      @223    GROSSPAY                          9.2
+      @232    GROSSPER                          2.0
+      @234    SALRYWKS                          2.0
+      @236    HRSALBAS                          3.0
+      @239    EARNTIPS                          2.0
+      @241    EARNBONS                          2.0
+      @243    EARNCOMM                          2.0
+      @245    TIPSAMT                           8.2
+      @253    TIPSUNIT_M18                      2.0
+      @255    BONSAMT                           9.2
+      @264    BONSUNIT                          2.0
+      @266    COMMAMT                           9.2
+      @275    COMMUNIT                          2.0
+      @277    INDCODEX                          2.0
+      @279    OCCCODEX                          2.0
+;
+
+
+* FORMAT STATEMENTS;
+FORMAT JOBSIDX                           $JOBSIDXF.
+       JOBIDX                            $JOBIDXF.
+       JOBNUM                            $JOBNUMF.
+       ESTBIDX                           $ESTBIDXF.
+       DUPERSID                          $DUPERSIDF.
+       DUID                              $DUIDF.
+       PID                               PIDF.
+       RN                                RNF.
+       OrigRnd                           ORIGRNDF.
+       PANEL                             PANELF.
+       JSTRTM                            JSTRTMF.
+       JSTRTY                            JSTRTYF.
+       JSTOPM                            JSTOPMF.
+       JSTOPY                            JSTOPYF.
+       RETIRJOB                          RETIRJOBF.
+       SUBTYPE                           SUBTYPEF.
+       STILLAT                           STILLATF.
+       TYPECHGD                          TYPECHGDF.
+       MAIN_JOB                          MAIN_JOBF.
+       DIFFWAGE                          DIFFWAGEF.
+       StillWorkFTPT                     STILLWORKF.
+       WhyChngPTToFT                     WHYCHNGPTT.
+       WhyChngFTToPT                     WHYCHNGFTT.
+       STILLWRK                          STILLWRKF.
+       OFFTAKEI                          OFFTAKEIF.
+       NOWTAKEI_M22                      NOWTAKEI_M.
+       ESTBTHRU                          ESTBTHRUF.
+       INSESTB                           INSESTBF.
+       HIDISAVW                          $HIDISAVWF.
+       RvwTotNumEmp                      RVWTOTNUME.
+       WHY_LEFT_M18                      WHY_LEFT_M.
+       JOBTYPE                           JOBTYPEF.
+       NUMEMPS                           NUMEMPSF.
+       ESTMATE1_M19                      ESTMATE1_M.
+       MORELOC                           MORELOCF.
+       BUSINC                            BUSINCF.
+       PROPRIET                          PROPRIETF.
+       TYPEEMPL                          TYPEEMPLF.
+       YLEFT_M18                         YLEFT_M18F.
+       YNOBUSN_M18                       YNOBUSN_M.
+       HRSPRWK                           HRSPRWKF.
+       HRS35WK                           HRS35WKF.
+       TEMPJOB                           TEMPJOBF.
+       SESNLJOB                          SESNLJOBF.
+       SICKPAY                           SICKPAYF.
+       PAYDRVST                          PAYDRVSTF.
+       PAYVACTN                          PAYVACTNF.
+       RETIRPLN                          RETIRPLNF.
+       WKLYAMT                           WKLYAMTF.
+       EMPLINS                           EMPLINSF.
+       JOBHASHI                          JOBHASHIF.
+       OFFRDINS                          OFFRDINSF.
+       DIFFPLNS                          DIFFPLNSF.
+       ANYINS                            ANYINSF.
+       INUNION                           INUNIONF.
+       PROVDINS                          PROVDINSF.
+       EmplUnionProv                     EMPLUNIONP.
+       HHMEMBER_M18                      HHMEMBER_M.
+       TOTLEMP_M18                       TOTLEMP_M.
+       TotNumEmp                         TOTNUMEMPF.
+       SALARIED                          SALARIEDF.
+       HOWPAID                           HOWPAIDF.
+       DAYWAGE                           DAYWAGEF.
+       HRSPRDY                           HRSPRDYF.
+       MAKEAMT                           MAKEAMTF.
+       PERUNIT_M18                       PERUNIT_M.
+       HRLYWAGE                          HRLYWAGEF.
+       MORE10                            MORE10F.
+       MORE15                            MORE15F.
+       MOREMINM                          MOREMINMF.
+       GROSSPAY                          GROSSPAYF.
+       GROSSPER                          GROSSPERF.
+       SALRYWKS                          SALRYWKSF.
+       HRSALBAS                          HRSALBASF.
+       EARNTIPS                          EARNTIPSF.
+       EARNBONS                          EARNBONSF.
+       EARNCOMM                          EARNCOMMF.
+       TIPSAMT                           TIPSAMTF.
+       TIPSUNIT_M18                      TIPSUNIT_M.
+       BONSAMT                           BONSAMTF.
+       BONSUNIT                          BONSUNITF.
+       COMMAMT                           COMMAMTF.
+       COMMUNIT                          COMMUNITF.
+       INDCODEX                          INDCODEXF.
+       OCCCODEX                          OCCCODEXF.
+;
+
+
+* LABEL STATEMENTS;
+LABEL JOBSIDX                          ="Job-round identifier"
+      JOBIDX                           ="Person s unique job identifier"
+      JOBNUM                           ="Unique DU-job identifier"
+      ESTBIDX                          ="Establishment identifier"
+      DUPERSID                         ="Person ID (DUID+PID)"
+      DUID                             ="Panel # + encrypted DU identifier"
+      PID                              ="Person number"
+      RN                               ="Round"
+      OrigRnd                          ="Round job first reported"
+      PANEL                            ="Panel to which job holder belongs"
+      JSTRTM                           ="Job start date - month"
+      JSTRTY                           ="Job start date - year"
+      JSTOPM                           ="Job stop date - month"
+      JSTOPY                           ="Job stop date - year"
+      RETIRJOB                         ="Person retired from this job"
+      SUBTYPE                          ="Job sub-type"
+      STILLAT                          ="Still works at main job establishment"
+      TYPECHGD                         ="Job sub-type changed between rounds"
+      MAIN_JOB                         ="Still main job or business"
+      DIFFWAGE                         ="Any change in wage amount"
+      StillWorkFTPT                    ="Still works full or part time"
+      WhyChngPTToFT                    ="Why change part to full time"
+      WhyChngFTToPT                    ="Why change full to part time"
+      STILLWRK                         ="Still works at misc job establishment"
+      OFFTAKEI                         ="Offered insurance and now take"
+      NOWTAKEI_M22                     ="Now has health insurance through employer"
+      ESTBTHRU                         ="Offered insurance, did not take (review)"
+      INSESTB                          ="Insurance offered to any employees (review)"
+      HIDISAVW                         ="Capi q where health insur thru emp/union disavowed"
+      RvwTotNumEmp                     ="Establishment size at continuing self-employed job"
+      WHY_LEFT_M18                     ="Reason why no longer at job now"
+      JOBTYPE                          ="Self-employed or works for someone else"
+      NUMEMPS                          ="Establishment size at not self-employed job"
+      ESTMATE1_M19                     ="Categorical approximate establishment size"
+      MORELOC                          ="Employer has more than one location"
+      BUSINC                           ="Business incorporated"
+      PROPRIET                         ="Proprietorship or partnership"
+      TYPEEMPL                         ="Employee type"
+      YLEFT_M18                        ="Reason why no longer at job"
+      YNOBUSN_M18                      ="Reason why no longer has business"
+      HRSPRWK                          ="Number of hours worked per week"
+      HRS35WK                          ="Works at least 35 hours per week"
+      TEMPJOB                          ="Job at employer is temporary"
+      SESNLJOB                         ="Job is available certain time of year"
+      SICKPAY                          ="Has paid sick leave thru job"
+      PAYDRVST                         ="Has paid sick leave for doc visit thru job"
+      PAYVACTN                         ="Has paid vacation leave thru job"
+      RETIRPLN                         ="Has pension/retirement plan thru job"
+      WKLYAMT                          ="Usual weekly gross income at misc job"
+      EMPLINS                          ="Has health insurance thru current main job"
+      JOBHASHI                         ="Has health insurance thru job"
+      OFFRDINS                         ="Offered insurance but chose not to take"
+      DIFFPLNS                         ="Choice of different health insurance plans"
+      ANYINS                           ="Health insurance offered to any employees"
+      INUNION                          ="Belongs to labor union"
+      PROVDINS                         ="Is health ins provided by employer, union or both"
+      EmplUnionProv                    ="Employer or union is primary health insurer"
+      HHMEMBER_M18                     ="Any other hh member wrk at this business"
+      TOTLEMP_M18                      ="Current establishment size at self-employed job"
+      TotNumEmp                        ="Establishment size at new self-employed job"
+      SALARIED                         ="Person salaried, paid by hour, some other way"
+      HOWPAID                          ="How is person paid"
+      DAYWAGE                          ="Person s daily wage rate"
+      HRSPRDY                          ="Number of hours person worked in one day"
+      MAKEAMT                          ="How much money does person make"
+      PERUNIT_M18                      ="Period for which person is paid"
+      HRLYWAGE                         ="How much person makes per hour"
+      MORE10                           ="Person makes more or less than $10/hour"
+      MORE15                           ="Person makes more or less than $15/hour"
+      MOREMINM                         ="Person makes more or less than min. wage"
+      GROSSPAY                         ="Person s salary before taxes (gross)"
+      GROSSPER                         ="Period in which gross salary was earned"
+      SALRYWKS                         ="Number of weeks per year salary is based"
+      HRSALBAS                         ="Hours per week salary based on"
+      EARNTIPS                         ="Person earns tips"
+      EARNBONS                         ="Person earns bonuses"
+      EARNCOMM                         ="Person earns commission"
+      TIPSAMT                          ="How much are person s tips"
+      TIPSUNIT_M18                     ="Period which tip earnings are based on"
+      BONSAMT                          ="How much are person s bonuses"
+      BONSUNIT                         ="Period which bonuses are based on"
+      COMMAMT                          ="How much are person s commissions"
+      COMMUNIT                         ="Period which commissions are based on"
+      INDCODEX                         ="Condensed industry code"
+      OCCCODEX                         ="Condensed occupation code"
+;
+
+
+* VALUE STATEMENTS;
+VALUE ANYINSF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE BONSAMTF  
+  -15 = "-15 CANNOT BE COMPUTED"
+  -10 = "-10 TOP CODED"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  0 = "0"
+  0.12 - 240000 = "$0.12 - $240,000.00"
+  ;
+VALUE BONSUNITF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 PER HOUR"
+  2 = "2 PER DAY"
+  3 = "3 PER WEEK"
+  4 = "4 PER TWO WKS"
+  5 = "5 PER MONTH"
+  6 = "6 PER YEAR"
+  91 = "91 OTHER"
+  ;
+VALUE BUSINCF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE COMMAMTF  
+  -15 = "-15 CANNOT BE COMPUTED"
+  -10 = "-10 TOP CODED"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  0 = "0"
+  2 - 250000 = "$2.00 - $250,000.00"
+  ;
+VALUE COMMUNITF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 PER HOUR"
+  2 = "2 PER DAY"
+  3 = "3 PER WEEK"
+  4 = "4 PER TWO WKS"
+  5 = "5 PER MONTH"
+  6 = "6 PER YEAR"
+  91 = "91 OTHER"
+  ;
+VALUE DAYWAGEF  
+  -15 = "-15 CANNOT BE COMPUTED"
+  -10 = "-10 TOP CODED"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  0 = "0"
+  10 - 650 = "$10.00 - $650.00"
+  ;
+VALUE DIFFPLNSF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES, GT ONE"
+  2 = "2 NO, ONLY ONE"
+  ;
+VALUE DIFFWAGEF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE $DUIDF  
+  '2460006' - '2799698' = "VALID ID"
+  ;
+VALUE $DUPERSIDF  
+  '2460006102' - '2799698101' = "VALID ID"
+  ;
+VALUE EARNBONSF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE EARNCOMMF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE EARNTIPSF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE EMPLINSF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE EMPLUNIONP  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 EMPLOYER"
+  2 = "2 UNION"
+  3 = "3 BOTH EMPLOYER AND UNION (EMPLOYER IS PRIMARY)"
+  4 = "4 BOTH EMPLOYER AND UNION (UNION IS PRIMARY)"
+  ;
+VALUE $ESTBIDXF  
+  '24600060102' - '27996980101' = "VALID ID"
+  ;
+VALUE ESTBTHRUF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE ESTMATE1_M  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  2 = "2 2 - 9"
+  3 = "3 10 - 25"
+  4 = "4 26 - 49"
+  5 = "5 50 - 100"
+  6 = "6 101 - 500"
+  7 = "7 501 - 1000"
+  8 = "8 1001 - 5000"
+  9 = "9 5001+"
+  ;
+VALUE GROSSPAYF  
+  -15 = "-15 CANNOT BE COMPUTED"
+  -10 = "-10 TOP CODED"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  0 = "0"
+  12 - 300000 = "$12.00 - $300,000.00"
+  ;
+VALUE GROSSPERF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 PER YEAR"
+  2 = "2 PER MONTH"
+  3 = "3 PER TWO WKS"
+  4 = "4 PER WEEK"
+  91 = "91 OTHER"
+  ;
+VALUE HHMEMBER_M  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE $HIDISAVWF  
+  '-1' = "-1 INAPPLICABLE"
+  '-15' = "-15 CANNOT BE COMPUTED"
+  'HP70' = "Q# HP70"
+  'HX14' = "Q# HX14"
+  'HX15' = "Q# HX15"
+  'HX20' = "Q# HX20"
+  ;
+VALUE HOWPAIDF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 BY THE DAY"
+  2 = "2 PIECEWORK"
+  3 = "3 COMMISSION"
+  4 = "4 BONUS"
+  5 = "5 BY JOB/MILE"
+  91 = "91 OTHER"
+  ;
+VALUE HRLYWAGEF  
+  -15 = "-15 CANNOT BE COMPUTED"
+  -10 = "-10 TOP CODED"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  0 = "0"
+  1 - 115 = "$1.00 - $115.00"
+  ;
+VALUE HRS35WKF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE HRSALBASF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 - 20 = "1 - 20"
+  21 - 30 = "21 - 30"
+  31 - 40 = "31 - 40"
+  41 - 60 = "41 - 60"
+  61 - 80 = "61 - 80"
+  81 - 84 = "81 - 84"
+  85 - 168 = "85 - 168"
+  ;
+VALUE HRSPRDYF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 - 4 = "1 - 4"
+  5 - 8 = "5 - 8"
+  9 - 15 = "9 - 15"
+  16 - 17 = "16 - 17"
+  ;
+VALUE HRSPRWKF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 - 20 = "1 - 20"
+  21 - 30 = "21 - 30"
+  31 - 40 = "31 - 40"
+  41 - 60 = "41 - 60"
+  61 - 80 = "61 - 80"
+  81 - 120 = "81 - 120"
+  121 - 168 = "121 - 168"
+  ;
+VALUE INDCODEXF  
+  -15 = "-15 CANNOT BE COMPUTED"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 NATURAL RESOURCES"
+  2 = "2 MINING"
+  3 = "3 CONSTRUCTION"
+  4 = "4 MANUFACTURING"
+  5 = "5 WHOLESALE AND RETAIL TRADE"
+  6 = "6 TRANSPORTATION AND UTILITIES"
+  7 = "7 INFORMATION"
+  8 = "8 FINANCIAL ACTIVITIES"
+  9 = "9 PROFESSIONAL AND BUSINESS SERVICES"
+  10 = "10 EDUCATION, HEALTH, AND SOCIAL SERVICES"
+  11 = "11 LEISURE AND HOSPITALITY"
+  12 = "12 OTHER SERVICES"
+  13 = "13 PUBLIC ADMINISTRATION"
+  14 = "14 MILITARY"
+  15 = "15 UNCLASSIFIABLE INDUSTRY"
+  ;
+VALUE INSESTBF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE INUNIONF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE JOBHASHIF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE $JOBIDXF  
+  '2460006102102' - '2799698101101' = "VALID ID"
+  ;
+VALUE $JOBNUMF  
+  '055' - '701' = "VALID ID"
+  ;
+VALUE $JOBSIDXF  
+  '24600061027102' - '27996981012101' = "VALID ID"
+  ;
+VALUE JOBTYPEF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 SELF-EMPLOYED"
+  2 = "2 FOR SOMEONE ELSE"
+  ;
+VALUE JSTOPMF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 - 12 = "1 - 12"
+  ;
+VALUE JSTOPYF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  0 = "0 STILL AT JOB"
+  1952 - 2021 = "1952 - 2021"
+  2022 = "2022"
+  2023 = "2023"
+  ;
+VALUE JSTRTMF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 - 12 = "1 - 12"
+  ;
+VALUE JSTRTYF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1952 - 2015 = "1952 - 2015"
+  2016 = "2016"
+  2017 = "2017"
+  2018 = "2018"
+  2019 = "2019"
+  2020 = "2020"
+  2021 = "2021"
+  2022 = "2022"
+  ;
+VALUE MAIN_JOBF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE MAKEAMTF  
+  -15 = "-15 CANNOT BE COMPUTED"
+  -10 = "-10 TOP CODED"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  0 = "0"
+  0.44 - 200000 = "$0.44 - $200,000.00"
+  ;
+VALUE MORE10F  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 GE $10"
+  2 = "2 LT $10"
+  ;
+VALUE MORE15F  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 GE $15"
+  2 = "2 LT $15"
+  ;
+VALUE MORELOCF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE MOREMINMF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 GE MINIMUM WAGE"
+  2 = "2 LT MINIMUM WAGE"
+  ;
+VALUE NOWTAKEI_M  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE NUMEMPSF  
+  -10 = "-10 # OF EMP >= 18,000"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  0 = "0"
+  1 - 9 = "1 - 9"
+  10 - 25 = "10 - 25"
+  26 - 50 = "26 - 50"
+  51 - 100 = "51 - 100"
+  101 - 500 = "101 - 500"
+  501 - 17000 = "501 - 17,000"
+  ;
+VALUE OCCCODEXF  
+  -15 = "-15 CANNOT BE COMPUTED"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 MANAGEMENT, BUSINESS, AND FINANCIAL OPER"
+  2 = "2 PROFESSIONAL AND RELATED OCCUPATIONS"
+  3 = "3 SERVICE OCCUPATIONS"
+  4 = "4 SALES AND RELATED OCCUPATIONS"
+  5 = "5 OFFICE AND ADMINISTRATIVE SUPPORT"
+  6 = "6 FARMING, FISHING, AND FORESTRY"
+  7 = "7 CONSTRUCTION, EXTRACTION, AND MAINTENANC"
+  8 = "8 PRODUCTION, TRNSPORTATION, MATRL MOVING"
+  9 = "9 MILITARY SPECIFIC OCCUPATIONS"
+  10 = "10 NOT IN LABOR FORCE"
+  11 = "11 UNCLASSIFIABLE OCCUPATION"
+  ;
+VALUE OFFRDINSF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE OFFTAKEIF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE ORIGRNDF  
+  1 = "1"
+  2 = "2"
+  3 = "3"
+  4 = "4"
+  5 = "5"
+  6 = "6"
+  7 = "7"
+  8 = "8"
+  9 = "9"
+  ;
+VALUE PANELF  
+  24 = "24"
+  26 = "26"
+  27 = "27"
+  ;
+VALUE PAYDRVSTF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE PAYVACTNF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE PERUNIT_M  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 PER DAY"
+  2 = "2 PER WEEK"
+  3 = "3 PER MONTH"
+  4 = "4 PER YEAR"
+  91 = "91 OTHER"
+  ;
+VALUE PIDF  
+  101 - 503 = "101 - 503"
+  ;
+VALUE PROPRIETF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE PROVDINSF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 EMPLOYER"
+  2 = "2 UNION"
+  3 = "3 BOTH"
+  ;
+VALUE RETIRJOBF  
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE RETIRPLNF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE RNF  
+  1 = "1"
+  2 = "2"
+  3 = "3"
+  4 = "4"
+  5 = "5"
+  7 = "7"
+  8 = "8"
+  9 = "9"
+  ;
+VALUE RVWTOTNUME  
+  -10 = "-10 # OF EMP >= 18,000"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 - 15000 = "1 - 15,000"
+  ;
+VALUE SALARIEDF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 SALARIED"
+  2 = "2 PAID BY HOUR"
+  3 = "3 OTHER"
+  ;
+VALUE SALRYWKSF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  0 = "0"
+  4 - 52 = "4 - 52"
+  ;
+VALUE SESNLJOBF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YEAR ROUND"
+  2 = "2 NOT YEAR ROUND"
+  ;
+VALUE SICKPAYF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE STILLATF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE STILLWORKF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE STILLWRKF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE SUBTYPEF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 CUR MAIN JOB IN REF PD"
+  2 = "2 CUR MISC JOB IN REF PD"
+  3 = "3 FMR MAIN JOB IN REF PD"
+  4 = "4 FMR MISC JOB IN REF PD"
+  5 = "5 LAST JOB OUTSD REF PD"
+  6 = "6 RETIREMENT JOB"
+  ;
+VALUE TEMPJOBF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 YES"
+  2 = "2 NO"
+  ;
+VALUE TIPSAMTF  
+  -15 = "-15 CANNOT BE COMPUTED"
+  -10 = "-10 TOP CODED"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  0 = "0"
+  1 - 22000 = "$1.00 - $22,000.00"
+  ;
+VALUE TIPSUNIT_M  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 PER DAY"
+  2 = "2 PER WEEK"
+  3 = "3 PER MONTH"
+  4 = "4 PER YEAR"
+  91 = "91 OTHER"
+  ;
+VALUE TOTLEMP_M  
+  -10 = "-10 # OF EMP >= 18,000"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 - 15000 = "1 - 15,000"
+  ;
+VALUE TOTNUMEMPF  
+  -10 = "-10 # OF EMP >= 18,000"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 - 10000 = "1 - 10,000"
+  ;
+VALUE TYPECHGDF  
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 SUBTYPE CHANGE"
+  2 = "2 NO SUBTYPE CHANGE"
+  ;
+VALUE TYPEEMPLF  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 PRIVATE"
+  2 = "2 FEDERAL"
+  3 = "3 STATE"
+  4 = "4 LOCAL"
+  5 = "5 ARMED FORCES"
+  6 = "6 FOREIGN NON US GOV"
+  ;
+VALUE WHYCHNGFTT  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 HOURS CUT, BUSINESS SLOW"
+  2 = "2 CHANGE IN SCHEDULE OR SHIFT"
+  3 = "3 ILLNESS, INJURY, HEALTH PROBLEM"
+  4 = "4 FAMILY, SCHOOL, TEMPORARY LEAVE"
+  91 = "91 OTHER - SPECIFY"
+  ;
+VALUE WHYCHNGPTT  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 CHANGE IN SCHEDULE OR SHIFT"
+  2 = "2 CHANGE IN PAY"
+  3 = "3 BENEFITS/HEALTH INSURANCE"
+  4 = "4 FAMILY, SCHOOL, TEMPORARY LEAVE"
+  91 = "91 OTHER - SPECIFY"
+  ;
+VALUE WHY_LEFT_M  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 JOB ENDED, TEMPORARY, SEASONAL, CONTRACT, ETC."
+  2 = "2 BUSINESS CLOSED OR SOLD"
+  3 = "3 RETIRED"
+  4 = "4 ILLNESS, INJURY, ANY HEALTH PROBLEM"
+  5 = "5 TERMINATED, FIRED, DISMISSED"
+  6 = "6 LAID OFF, LET GO"
+  7 = "7 QUIT - FAMILY REASON, MATERNITY LEAVE"
+  8 = "8 QUIT - SCHOOL"
+  9 = "9 QUIT - JOB RELATED REASON"
+  10 = "10 QUIT - ANY OTHER REASON"
+  91 = "91 OTHER - SPECIFY"
+  ;
+VALUE WKLYAMTF  
+  -15 = "-15 CANNOT BE COMPUTED"
+  -10 = "-10 TOP CODED"
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  0 = "0"
+  7 - 3100 = "$7.00 - $3,100.00"
+  ;
+VALUE YLEFT_M18F  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 JOB ENDED, TEMPORARY, SEASONAL, CONTRACT, ETC."
+  2 = "2 BUSINESS CLOSED OR SOLD"
+  3 = "3 ILLNESS, INJURY, ANY HEALTH PROBLEM"
+  4 = "4 TERMINATED, FIRED, DISMISSED"
+  5 = "5 LAID OFF, LET GO"
+  6 = "6 QUIT - FAMILY REASON, MATERNITY LEAVE"
+  7 = "7 QUIT - SCHOOL"
+  8 = "8 QUIT - JOB RELATED REASON"
+  9 = "9 QUIT - ANY OTHER REASON"
+  91 = "91 OTHER - SPECIFY"
+  ;
+VALUE YNOBUSN_M  
+  -8 = "-8 DK"
+  -7 = "-7 REFUSED"
+  -1 = "-1 INAPPLICABLE"
+  1 = "1 BUSINESS SOLD OR CLOSED"
+  2 = "2 RETIRED"
+  3 = "3 ILLNESS OR INJURY"
+  91 = "91 OTHER"
+  ;
