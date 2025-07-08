@@ -9,12 +9,21 @@
 
 % Portada
 \begin{document}
+% Portada mejorada
 \begin{titlepage}
+    \newgeometry{top=3cm,bottom=3cm,left=3.5cm,right=3.5cm}
     \centering
-    {\LARGE\bfseries Predicción del coste de la prima “out of pocket” de seguro médico en MEPS 2022\\[1.5em]}
+    \vspace*{1cm}
+    {\Huge\bfseries Universidad de La Habana\\[0.5em]}
+    {\Large Facultad de Ciencias\\[2em]}
+    \rule{\textwidth}{1pt}\\[1.5em]
+    {\LARGE\bfseries Predicción del coste de la prima “out of pocket”\\de seguro médico en MEPS 2022\\[1.5em]}
+    \rule{\textwidth}{1pt}\\[2em]
     \vfill
-    {\large Diego J. Puentes Fernandez\\}
-    {\large Ciencia de Datos}
+    {\large\textbf{Autor:} Diego J. Puentes Fernandez\\[0.5em]}
+    {\large\textbf{Materia:} Ciencia de Datos}
+    \vfill
+    \restoregeometry
 \end{titlepage}
 
 % Índice
@@ -290,182 +299,144 @@ Para construir estos límites, se siguió la siguiente lógica:
 \subsection*{Prevención de fuga de información}
 Un aspecto fundamental de este enfoque es evitar la fuga de información (\textit{data leakage}). Para ello, la búsqueda de personas similares y el cálculo de los rangos se realiza siempre utilizando únicamente el conjunto de entrenamiento, sin acceder a los valores reales de la variable objetivo en el conjunto de test. De este modo, se garantiza que la estimación de los rangos es válida y no está contaminada por información futura o no disponible en un escenario real.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+\section{Evaluación de Modelos del Tercer Modelado: Predicción de Límites Personalizados}
+
+En este tercer enfoque, el objetivo fue predecir no un valor único de prima, sino tres límites personalizados (\textbf{Excelente}, \textbf{Bueno}, \textbf{Regular}) para cada persona, utilizando un modelo multisalida (\textit{MultiOutputRegressor}) basado en Random Forest y otros algoritmos. El dataset se dividió en un 70\% para entrenamiento y un 30\% para prueba, asegurando que la construcción de los límites personalizados para cada persona del test se realizó \textbf{sin fuga de información}, es decir, usando sólo los datos de entrenamiento para definir los vecinos y los percentiles.
+
+El ajuste de hiperparámetros se realizó mediante \textbf{GridSearchCV}, probando combinaciones de parámetros para cada modelo y seleccionando la mejor según validación cruzada. Además, se aplicó \textbf{cross-validation} (validación cruzada 5-fold) para estimar el desempeño real de los modelos y evitar sobreajuste.
+
+\subsection*{Comportamiento general del modelo}
+El modelo multisalida mostró un desempeño muy superior al de la predicción directa de la prima. Los errores (MAE y RMSE) fueron considerablemente menores y los valores de $R^2$ mucho más altos, indicando que los modelos lograron capturar la estructura de los datos y predecir rangos personalizados de prima con alta precisión. Esto se debe a que el enfoque de rangos es más robusto ante la alta dispersión y variabilidad de la variable objetivo, y aprovecha la información de personas similares en el dataset.
+
+\subsection*{Resultados por límite}
+\textbf{Límite Excelente}
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.7\textwidth]{limiteexcelente.png}
+    \caption{Curva de aprendizaje para el límite Excelente}
+\end{figure}
+\begin{table}[h!]
+    \centering
+    \begin{tabular}{lccccc}
+        \toprule
+        Modelo & MAE & RMSE & $R^2$ & Bias & Varianza \\
+        \midrule
+        LinearRegression & 34.89 & 44.95 & 0.23 & -0.03 & 858.45 \\
+        GradientBoosting & 15.44 & 21.12 & 0.83 & 0.04 & 2144.26 \\
+        RandomForest & 8.74 & 14.28 & 0.92 & -0.04 & 2455.73 \\
+        XGBoost & 15.12 & 20.43 & 0.84 & 0.09 & 2113.49 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Métricas para el límite Excelente}
+\end{table}
+
+\textbf{Límite Bueno}
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.7\textwidth]{limitebueno.png}
+    \caption{Curva de aprendizaje para el límite Bueno}
+\end{figure}
+\begin{table}[h!]
+    \centering
+    \begin{tabular}{lccccc}
+        \toprule
+        Modelo & MAE & RMSE & $R^2$ & Bias & Varianza \\
+        \midrule
+        LinearRegression & 60.27 & 74.94 & 0.23 & -0.01 & 1771.51 \\
+        GradientBoosting & 20.77 & 28.53 & 0.89 & 0.00 & 5222.17 \\
+        RandomForest & 18.10 & 26.27 & 0.91 & 0.11 & 5476.06 \\
+        XGBoost & 20.59 & 28.37 & 0.89 & 0.10 & 5173.39 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Métricas para el límite Bueno}
+\end{table}
+
+\textbf{Límite Regular}
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.7\textwidth]{limiteregular.png}
+    \caption{Curva de aprendizaje para el límite Regular}
+\end{figure}
+\begin{table}[h!]
+    \centering
+    \begin{tabular}{lccccc}
+        \toprule
+        Modelo & MAE & RMSE & $R^2$ & Bias & Varianza \\
+        \midrule
+        LinearRegression & 90.75 & 115.58 & 0.14 & 0.02 & 2354.56 \\
+        GradientBoosting & 34.72 & 49.76 & 0.84 & 0.16 & 10893.46 \\
+        RandomForest & 28.69 & 45.16 & 0.87 & 0.11 & 11379.11 \\
+        XGBoost & 34.47 & 49.43 & 0.84 & 0.09 & 10713.24 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Métricas para el límite Regular}
+\end{table}
+
+\subsection*{Validación cruzada y ajuste de hiperparámetros}
+Para cada modelo y cada límite, se realizó validación cruzada 5-fold y ajuste de hiperparámetros. Las siguientes tablas muestran los resultados promedio de validación y entrenamiento para cada modelo y cada límite:
+
+\textbf{Límite Excelente}
+\begin{table}[h!]
+    \centering
+    \begin{tabular}{lcccccc}
+        \toprule
+        Modelo & MAE (val) & RMSE (val) & $R^2$ (val) & MAE (train) & RMSE (train) & $R^2$ (train) \\
+        \midrule
+        LinearRegression & 36.74 & 48.13 & 0.26 & 36.53 & 47.90 & 0.27 \\
+        GradientBoosting & 26.37 & 35.66 & 0.60 & 25.82 & 34.82 & 0.62 \\
+        RandomForest & 4.71 & 9.22 & 0.97 & 1.81 & 3.57 & 1.00 \\
+        XGBoost & 10.83 & 15.36 & 0.92 & 6.58 & 9.63 & 0.97 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Validación cruzada para el límite Excelente}
+\end{table}
+
+\textbf{Límite Bueno}
+\begin{table}[h!]
+    \centering
+    \begin{tabular}{lcccccc}
+        \toprule
+        Modelo & MAE (val) & RMSE (val) & $R^2$ (val) & MAE (train) & RMSE (train) & $R^2$ (train) \\
+        \midrule
+        LinearRegression & 61.51 & 75.97 & 0.23 & 61.17 & 75.54 & 0.24 \\
+        GradientBoosting & 42.26 & 54.59 & 0.60 & 41.28 & 53.29 & 0.62 \\
+        RandomForest & 7.97 & 15.08 & 0.97 & 3.08 & 6.00 & 1.00 \\
+        XGBoost & 14.59 & 21.02 & 0.94 & 8.94 & 13.05 & 0.98 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Validación cruzada para el límite Bueno}
+\end{table}
+
+\textbf{Límite Regular}
+\begin{table}[h!]
+    \centering
+    \begin{tabular}{lcccccc}
+        \toprule
+        Modelo & MAE (val) & RMSE (val) & $R^2$ (val) & MAE (train) & RMSE (train) & $R^2$ (train) \\
+        \midrule
+        LinearRegression & 91.54 & 115.86 & 0.14 & 91.01 & 115.26 & 0.15 \\
+        GradientBoosting & 59.37 & 79.21 & 0.60 & 58.05 & 77.47 & 0.62 \\
+        RandomForest & 15.31 & 27.96 & 0.95 & 5.79 & 10.69 & 0.99 \\
+        XGBoost & 25.43 & 37.33 & 0.91 & 15.57 & 23.25 & 0.97 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Validación cruzada para el límite Regular}
+\end{table}
+
+\subsection*{Discusión de resultados y comparación de modelos}
+Los resultados muestran que \textbf{Random Forest} y \textbf{XGBoost} son los modelos con mejor desempeño en la predicción de los límites personalizados, alcanzando valores de $R^2$ superiores a 0.9 y errores absolutos (MAE) muy bajos en comparación con los otros modelos. El modelo Random Forest, en particular, logra el menor MAE y el mayor $R^2$ en los tres límites, lo que lo posiciona como la mejor opción para este problema.
+
+Este enfoque de predicción de rangos funciona mejor que la predicción directa del valor único de la prima porque aprovecha la información de personas similares y reduce el impacto de la alta dispersión y los outliers en la variable objetivo. El dataset favorece este enfoque porque, aunque la relación entre las variables predictoras y la prima es débil para una predicción puntual, sí permite agrupar a las personas en perfiles similares y estimar rangos de referencia mucho más estables y útiles para la toma de decisiones.
+
+\subsection*{Implementación técnica y despliegue}
+Para implementar este modelo, se utilizó \textbf{MultiOutputRegressor} con Random Forest, permitiendo predecir los tres límites de manera simultánea y eficiente. El modelo entrenado se exportó y se sirvió a través de una página web interactiva construida con \textbf{Streamlit}, donde los usuarios pueden ingresar sus características y obtener su rango personalizado de prima esperada de forma sencilla y visual.
+
+\section{Conclusiones}
+En este trabajo se exploraron diferentes enfoques para la predicción de la prima “out of pocket” de seguro médico usando datos de MEPS 2022. Se demostró que la predicción directa del valor único de la prima es una tarea muy difícil debido a la alta dispersión, presencia de outliers y falta de variables explicativas clave en el dataset. Sin embargo, el enfoque de predicción de límites personalizados basado en personas similares y modelos multisalida permitió obtener resultados mucho más robustos y útiles, con errores bajos y alta capacidad explicativa. La solución final, implementada y desplegada en una interfaz web, permite a los usuarios obtener rangos personalizados de referencia para su prima, facilitando la toma de decisiones informadas y realistas en un contexto de alta incertidumbre y variabilidad.
 
 \end{document}
+
+
+
+
+

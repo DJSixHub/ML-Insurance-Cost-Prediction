@@ -196,12 +196,11 @@ def filtrar_datos_por_muestra(df_demographics, df_conditions, df_jobs, df_insura
     return df_demo_filtered, df_cond_filtered, df_jobs_filtered, df_insurance_filtered
 
 def crear_json_unificado(df_demographics, df_conditions, df_jobs, df_insurance, df_ccsr_ref):
-    # ...existing code...
+    #
     """Crear el JSON unificado con una entrada por persona, dividiendo condiciones médicas en actuales/pasadas y calculando cantidad_lesiones"""
     print("Creando JSON unificado...")
 
-    # --- Cargar mapeos crónicos (igual que en generar_snapshots.py) ---
-    # ...existing code...
+   
     def filtrar_historial_seguros(unified_data):
         # Filtro final: eliminar registros de historial_seguros con prima_out_of_pocket_editada igual a 0.0
         for person_id, person_data in unified_data.items():
