@@ -319,7 +319,12 @@ def crear_json_unificado(df_demographics, df_conditions, df_jobs, df_insurance, 
         person_id = insurance_row['person_unique_id']
         if person_id in unified_data:
             prima_editada = insurance_row.get('out_of_pocket_premium_edited', None)
-            if (prima_editada is not None and prima_editada != '' and prima_editada != 'Inapplicable' and pd.notna(prima_editada)):
+            # Filtrar registros con prima igual a 0.0
+            try:
+                prima_val = float(prima_editada)
+            except (TypeError, ValueError):
+                prima_val = None
+            if (prima_editada is not None and prima_editada != '' and prima_editada != 'Inapplicable' and pd.notna(prima_editada) and prima_val != 0.0):
                 round_num = insurance_row.get('round_number', None)
                 insurance_data = {
                     'cobertura_seguro': insurance_row.get('insurance_coverage', None),

@@ -87,7 +87,7 @@ def main():
 
 
     # Variables categóricas one-hot (con 0/1 en vez de True/False)
-    one_hot_features = ['sexo', 'raza_etnicidad', 'estado_civil', 'region']  # Quitamos cobertura_seguro
+    one_hot_features = ['sexo', 'raza_etnicidad', 'estado_civil', 'region']
     df = pd.get_dummies(df, columns=one_hot_features, drop_first=True, dtype=int)
 
     # Variables label encoding
@@ -109,16 +109,11 @@ def main():
     X = df[features].copy()
     y = df['prima_out_of_pocket_editada']
 
-    # Eliminar outliers de la variable objetivo antes de guardar
-    from scipy.stats import zscore
-    z_scores = zscore(y)
-    outlier_mask = np.abs(z_scores) > 3
-    # Solo mantener los no-outliers
+    # Guardar el dataset completo (sin eliminar outliers)
     dataset = X.copy()
     dataset['prima_out_of_pocket_editada'] = y
-    dataset = dataset[~outlier_mask]
     dataset.to_csv(output_path, index=False)
-    print(f"Dataset saved to {output_path} (sin outliers de prima_out_of_pocket_editada)")
+    print(f"Dataset saved to {output_path} (con outliers de prima_out_of_pocket_editada)")
 
 if __name__ == "__main__":
     main()

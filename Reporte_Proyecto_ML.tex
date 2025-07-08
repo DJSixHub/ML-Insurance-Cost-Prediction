@@ -31,6 +31,34 @@
 \date{Julio 2025}
 
 \begin{document}
+% Página de presentación
+\begin{titlepage}
+
+    \centering
+    {\Huge\bfseries Predicción personalizada de primas de seguro médico usando Machine Learning \par}
+    \vspace{2cm}
+    {\Large Diego J. Puentes Fernández \par}
+    {\large Carrera: Ciencia de Datos \par}
+    {\large Universidad de La Habana \par}
+    \vfill
+\end{titlepage}
+
+
+% Índice manual
+\newpage
+\section*{Índice}
+\begin{enumerate}[leftmargin=2cm]
+    \item Descripción del problema
+    \item Origen y descripción de los datos
+    \item Primer procesamiento y mapeo de los datos
+    \item Construcción del dataset para modelado
+    \item Visualización de variables principales
+    \item Caracterización de Outliers en la variable objetivo
+    \item Primera Propuesta de Modelado
+    \item Segunda propuesta de Modelado: Replanteando el Problema
+    \item Resultados del modelado por intervalos personalizados
+\end{enumerate}
+\newpage
 
 \maketitle
 
@@ -45,8 +73,6 @@ Los datos utilizados provienen de tres fuentes principales: el Medical Expenditu
     \item \textbf{CCSR}: Herramienta de clasificación que agrupa diagnósticos clínicos de acuerdo a códigos ICD-10, facilitando el análisis de condiciones de salud.
     \item \textbf{CCIR}: Tabla de correspondencia que permite mapear códigos y categorías clínicas entre diferentes sistemas de clasificación.
 \end{itemize}
-
-
 
 
 \section*{Primer procesamiento y mapeo de los datos}
@@ -172,5 +198,453 @@ No todas estas columnas ofrecían información relevante para el objetivo del tr
   ]
 }
 \end{verbatim}
+
+Para la generación del archivo JSON final, se aplicaron los siguientes filtros y criterios de limpieza:
+\begin{itemize}
+    \item Se filtró la información de cada persona para conservar únicamente los registros correspondientes al máximo número de round reflejado en su historial de seguros. Esto garantiza que no exista desfase temporal entre la información demográfica, clínica y de seguros considerada para el análisis.
+    \item Se seleccionaron únicamente aquellas personas que tuvieran al menos una entrada válida de la variable objetivo, es decir, un valor válido de \texttt{prima\_out\_of\_pocket\_editada} en su historial de seguros.
+    \item Para cada persona, se eliminaron del historial de seguros los registros que no tuvieran un valor válido de \texttt{prima\_out\_of\_pocket\_editada}, de modo que sólo se conservaron las entradas relevantes para el modelado.
+
+
+
+\section*{Construcción del dataset para modelado}
+
+A partir del archivo JSON unificado, se construyó un dataset tabular donde cada fila representa un embedding asociado a una persona individual. El proceso de construcción y transformación de variables fue el siguiente:
+\begin{itemize}
+    \item Se mantuvieron los valores originales de las variables numéricas.
+    \item Se aplicó codificación one-hot (one hot encoding) a las variables categóricas principales (sexo, raza/etnicidad, estado civil, región).
+    \item Se identificaron las 20 enfermedades (CCSR) con mayor correlación con la variable objetivo y se agregaron como features binarios (presencia/ausencia) mediante label encoding.
+    \item Se agregó el número total de enfermedades por persona (\texttt{ccsr\_num\_total}) y el número de enfermedades no incluidas entre las 20 principales (\texttt{ccsr\_otra\_condicion}).
+    \item Para la variable objetivo (\texttt{prima\_out\_of\_pocket\_editada}), si una persona tenía más de una entrada válida, se tomó la media de sus valores.
+\end{itemize}
+
+En resumen, las columnas seleccionadas y la transformación aplicada a cada una fueron:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+\toprule
+\textbf{Columna} & \textbf{Transformación aplicada} \\
+\midrule
+edad & Se mantuvo igual (numérica) \\
+estado\_salud\_percibido & Label encoding (1-4) \\
+ccsr\_num\_total & Se mantuvo igual (numérica) \\
+ccsr\_otra\_condicion & Se mantuvo igual (numérica) \\
+sexo\_Male & One hot encoding \\
+raza\_etnicidad\_Non-Hispanic Asian only & One hot encoding \\
+raza\_etnicidad\_Non-Hispanic Black only & One hot encoding \\
+raza\_etnicidad\_Non-Hispanic Other race or multi-race & One hot encoding \\
+raza\_etnicidad\_Non-Hispanic White only & One hot encoding \\
+estado\_civil\_Married & One hot encoding \\
+estado\_civil\_Never married & One hot encoding \\
+estado\_civil\_Separated & One hot encoding \\
+estado\_civil\_Under 16 - not applicable & One hot encoding \\
+estado\_civil\_Widowed & One hot encoding \\
+region\_Midwest & One hot encoding \\
+region\_Northeast & One hot encoding \\
+region\_South & One hot encoding \\
+region\_West & One hot encoding \\
+ccsr\_Essential hypertension & One hot encoding (presencia/ausencia) \\
+ccsr\_Disorders of lipid metabolism & One hot encoding (presencia/ausencia) \\
+ccsr\_Diabetes mellitus without complication & One hot encoding (presencia/ausencia) \\
+ccsr\_Bacterial infections & One hot encoding (presencia/ausencia) \\
+ccsr\_Osteoarthritis & One hot encoding (presencia/ausencia) \\
+ccsr\_Cataract and other lens disorders & One hot encoding (presencia/ausencia) \\
+ccsr\_Esophageal disorders & One hot encoding (presencia/ausencia) \\
+ccsr\_Retinal and vitreous conditions & One hot encoding (presencia/ausencia) \\
+ccsr\_Other general signs and symptoms & One hot encoding (presencia/ausencia) \\
+ccsr\_Abnormal findings without diagnosis & One hot encoding (presencia/ausencia) \\
+ccsr\_Other specified bone disease and musculoskeletal deformities & One hot encoding (presencia/ausencia) \\
+ccsr\_Otitis media & One hot encoding (presencia/ausencia) \\
+ccsr\_Osteoporosis & One hot encoding (presencia/ausencia) \\
+ccsr\_Thyroid disorders & One hot encoding (presencia/ausencia) \\
+ccsr\_Neurodevelopmental disorders & One hot encoding (presencia/ausencia) \\
+ccsr\_Other and ill-defined heart disease & One hot encoding (presencia/ausencia) \\
+ccsr\_Other specified upper respiratory infections & One hot encoding (presencia/ausencia) \\
+ccsr\_Nutritional deficiencies & One hot encoding (presencia/ausencia) \\
+ccsr\_Other specified inflammatory condition of skin & One hot encoding (presencia/ausencia) \\
+ccsr\_General sensation/perception signs and symptoms & One hot encoding (presencia/ausencia) \\
+prima\_out\_of\_pocket\_editada & Se mantuvo igual (media por persona si había más de una entrada) \\
+\bottomrule
+\end{tabular}
+\caption{Resumen de las columnas y transformaciones aplicadas en el dataset final para modelado.}
+\end{table}
+
+\section*{Visualización de variables principales}
+\indent En esta sección se presentan las principales visualizaciones generadas durante el análisis exploratorio y la construcción del dataset. Todas las imágenes fueron exportadas desde el notebook y se encuentran en la raíz del proyecto.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{region.png}
+    \caption{Cantidad de personas por región.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{raza.png}
+    \caption{Cantidad de personas por raza/etnicidad.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{enfermedades.png}
+    \caption{Cantidad de personas con cada una de las 20 enfermedades principales (CCSR).}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{rango edad.png}
+    \caption{Cantidad de personas por rango de edad (5 años).}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{rango pagos.png}
+    \caption{Cantidad de personas por rango de pagos de prima (de 100 en 100).}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{hombres_mujeres.png}
+    \caption{Cantidad de personas por sexo.}
+\end{figure}
+
+
+
+\section*{Caracterización de Outliers en la variable objetivo}
+Se identificaron los outliers de la variable objetivo (\texttt{prima\_out\_of\_pocket\_editada}) como aquellos con $|z| > 3$ respecto a la media. A continuación se resumen sus características comparadas con el resto del dataset:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lcc}
+\toprule
+\textbf{Característica} & \textbf{Outliers} & \textbf{Resto} \\
+\midrule
+Cantidad de outliers & 186 & 10000+ \\
+Porcentaje sobre el total & 1.83\% & 98.17\% \\
+Edad (media) & 36.76 & 42.13 \\
+Nº total de enfermedades (media) & 2.15 & 2.96 \\
+Nº de otras condiciones (media) & 1.53 & 2.00 \\
+Sexo masculino (proporción) & 0.46 & 0.48 \\
+\midrule
+\multicolumn{3}{l}{\textbf{Región (proporción)}} \\
+Midwest & 0.27 & 0.23 \\
+Northeast & 0.18 & 0.17 \\
+South & 0.19 & 0.35 \\
+West & 0.35 & 0.26 \\
+\midrule
+\multicolumn{3}{l}{\textbf{Estado civil (proporción)}} \\
+Married & 0.55 & 0.48 \\
+Never married & 0.20 & 0.23 \\
+Separated & 0.00 & 0.01 \\
+Under 16 - not applicable & 0.23 & 0.15 \\
+Widowed & 0.01 & 0.04 \\
+\midrule
+\multicolumn{3}{l}{\textbf{Raza/etnicidad (proporción)}} \\
+Non-Hispanic Asian only & 0.06 & 0.07 \\
+Non-Hispanic Black only & 0.04 & 0.11 \\
+Non-Hispanic Other/multi-race & 0.02 & 0.04 \\
+Non-Hispanic White only & 0.74 & 0.64 \\
+\midrule
+\multicolumn{3}{l}{\textbf{Enfermedades principales (proporción)}} \\
+Essential hypertension & 0.13 & 0.21 \\
+Disorders of lipid metabolism & 0.11 & 0.16 \\
+Diabetes mellitus without complication & 0.02 & 0.08 \\
+Bacterial infections & 0.01 & 0.02 \\
+Osteoarthritis & 0.02 & 0.06 \\
+Cataract and other lens disorders & 0.01 & 0.02 \\
+Esophageal disorders & 0.02 & 0.06 \\
+Retinal and vitreous conditions & 0.01 & 0.02 \\
+Other general signs and symptoms & 0.02 & 0.03 \\
+Abnormal findings without diagnosis & 0.01 & 0.02 \\
+Other specified bone disease and musculoskeletal deformities & 0.00 & 0.01 \\
+Otitis media & 0.02 & 0.03 \\
+Osteoporosis & 0.01 & 0.01 \\
+Thyroid disorders & 0.05 & 0.07 \\
+Neurodevelopmental disorders & 0.08 & 0.04 \\
+Other and ill-defined heart disease & 0.00 & 0.01 \\
+Other specified upper respiratory infections & 0.03 & 0.03 \\
+Nutritional deficiencies & 0.02 & 0.02 \\
+Other specified inflammatory condition of skin & 0.04 & 0.03 \\
+General sensation/perception signs and symptoms & 0.00 & 0.00 \\
+\bottomrule
+\end{tabular}
+\caption{Comparación de características entre outliers y el resto del dataset para la variable objetivo.}
+\end{table}
+
+Los outliers representan el 1.8\% de la muestra y tienden a ser ligeramente más jóvenes, con menos enfermedades y menor proporción de condiciones crónicas que el resto. La mayoría son de raza blanca no hispana y residen en la región Oeste o Midwest, con menor presencia en el Sur. No se observa una diferencia marcada en sexo ni en estado civil, aunque hay una ligera mayor proporción de casados y menores de 16 años. En cuanto a enfermedades, los outliers presentan menor prevalencia de hipertensión, diabetes y dislipidemias.\\\\
+En conclusión, los outliers no presentan características demográficas o clínicas radicalmente distintas al resto del dataset, lo que sugiere que los valores extremos de la variable objetivo pueden deberse a factores no capturados en las variables disponibles o a variabilidad natural en los datos.
+
+\section*{Primera Propuesta de Modelado}
+La primera propuesta de modelado consistió en construir un modelo capaz de predecir con exactitud el valor de la prima ``out of pocket'' que una persona debería pagar por su seguro médico, a partir de las variables disponibles en el dataset procesado.
+
+Sin embargo, la predicción exacta de la prima ``out of pocket'' resulta un reto considerable con la información disponible, y requiere considerar enfoques alternativos de modelado, técnicas de manejo de outliers y posiblemente la incorporación de variables adicionales, como se muestra a continuación.
+
+\subsection*{Métricas de evaluación utilizadas}
+Para evaluar el desempeño de los modelos de regresión en la predicción de la prima ``out of pocket'', se emplearon las siguientes métricas:
+\begin{itemize}
+    \item \textbf{MAE (Mean Absolute Error / Error Absoluto Medio):} Indica el promedio de las diferencias absolutas entre los valores predichos y los reales. Es una métrica intuitiva y robusta frente a outliers, ya que mide el error promedio en las mismas unidades que la variable objetivo.
+    \item \textbf{RMSE (Root Mean Squared Error / Raíz del Error Cuadrático Medio):} Penaliza más fuertemente los errores grandes que el MAE, ya que eleva al cuadrado las diferencias antes de promediar. Es útil para identificar si el modelo comete errores grandes con frecuencia.
+    \item \textbf{R$^2$ (Coeficiente de determinación):} Mide la proporción de la varianza de la variable objetivo explicada por el modelo. Un valor cercano a 1 indica buen ajuste, mientras que valores cercanos a 0 o negativos indican bajo poder predictivo.
+\end{itemize}
+
+Estas métricas son relevantes porque permiten comparar modelos de manera objetiva, considerando tanto la magnitud promedio del error (MAE), la sensibilidad a errores grandes (RMSE) y la capacidad explicativa global del modelo (R$^2$). 
+
+\section*{Modelos para el primer problema}
+Para abordar la predicción de la prima ``out of pocket'' se seleccionaron cuatro modelos de regresión representativos:
+\begin{itemize}
+    \item \textbf{Linear Regression}: Modelo lineal base, útil como referencia y para identificar relaciones lineales simples.
+    \item \textbf{Random Forest}: Ensamble de árboles de decisión, robusto ante relaciones no lineales y capaz de manejar variables categóricas codificadas.
+    \item \textbf{Gradient Boosting}: Ensamble secuencial que optimiza el error, adecuado para capturar patrones complejos y relaciones no lineales.
+    \item \textbf{XGBoost}: Variante avanzada de boosting, eficiente y con regularización, ampliamente utilizada en competencias de ciencia de datos.
+\end{itemize}
+Estos modelos fueron elegidos por su complementariedad: permiten comparar desde un enfoque lineal simple hasta técnicas de ensamble y boosting que pueden capturar relaciones más complejas y no lineales presentes en los datos.
+
+\subsection*{Resultados sin ajuste de hiperparámetros}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{modelossin hieprarametros.png}
+    \caption{Curvas de aprendizaje de los 4 modelos sin ajuste de hiperparámetros.}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Modelo} & \textbf{MAE} & \textbf{RMSE} & \textbf{R$^2$} \\
+\midrule
+LinearRegression & 191.64 & 252.57 & 0.06 \\
+RandomForest & 203.96 & 269.36 & -0.07 \\
+GradientBoosting & 187.45 & 248.91 & 0.08 \\
+XGBoost & 198.06 & 260.85 & -0.01 \\
+\bottomrule
+\end{tabular}
+\caption{Comparación de métricas de los modelos sin ajuste de hiperparámetros.}
+\end{table}
+
+\subsection*{Resultados con ajuste de hiperparámetros}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{modelosconhiperparametros.png}
+    \caption{Curvas de aprendizaje de los 4 modelos tras ajuste de hiperparámetros.}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Modelo} & \textbf{MAE} & \textbf{RMSE} & \textbf{R$^2$} \\
+\midrule
+LinearRegression & 191.64 & 252.57 & 0.06 \\
+RandomForest & 188.90 & 250.27 & 0.07 \\
+GradientBoosting & 187.30 & 248.44 & 0.09 \\
+XGBoost & 187.36 & 248.76 & 0.08 \\
+\bottomrule
+\end{tabular}
+\caption{Comparación de métricas de los modelos tras ajuste de hiperparámetros.}
+\end{table}
+
+\subsection*{Conclusiones sobre el desempeño de los modelos}
+
+En general, todos los modelos presentan un desempeño modesto, con valores de MAE y RMSE relativamente altos en comparación con la media de la variable objetivo, y valores de R$^2$ bajos (cercanos a 0). Esto indica que la capacidad explicativa de los modelos sobre la variabilidad de la prima es limitada.
+
+El ajuste de hiperparámetros mejora ligeramente el desempeño de los modelos de ensamble (Random Forest, Gradient Boosting y XGBoost), pero la mejora es marginal. El modelo lineal sirve como referencia y muestra que la relación entre las variables disponibles y la prima no es predominantemente lineal.
+
+Las razones de este desempeño limitado están asociadas a la estructura del dataset:
+\begin{itemize}
+    \item La variable objetivo presenta una alta dispersión y asimetría, con una cola de valores extremos (outliers), lo que dificulta que los modelos ajusten correctamente tanto los valores típicos como los atípicos.
+    \item Las variables explicativas disponibles muestran correlaciones muy bajas con la variable objetivo, tanto lineales como no lineales, y en conjunto los modelos lineales apenas explican un 5\% de la variabilidad de la prima (R$^2$ multivariable lineal $\approx$ 0.05).
+    \item Ninguna variable individualmente, ni siquiera con ajustes polinómicos, logra explicar una fracción significativa de la variabilidad de la prima (todas las correlaciones y R$^2$ individuales son cercanas a cero).
+    \item Existen relaciones complejas y factores no observados que los modelos no pueden capturar completamente, lo que justifica la necesidad de modelos no lineales, a pesar del poco escazo éxito en esta tarea.
+\end{itemize}
+En conclusión, aunque los modelos avanzados de boosting y ensamble logran un desempeño ligeramente superior, la predicción exacta de la prima ``out of pocket'' sigue siendo un reto considerable con la información disponible.
+
+
+\section*{Segunda propuesta de Modelado: Replanteando el Problema}
+
+Ante la dificultad de predecir con precisión un único valor de prima ``out of pocket'' para cada individuo, se propone un replanteamiento del problema: en lugar de estimar un valor puntual, predecir \textbf{intervalos de primas} que sean relevantes y útiles para la toma de decisiones.
+
+En este enfoque, para cada individuo se busca determinar una lista de tres valores que representen límites superiores de intervalos de prima:
+\begin{itemize}
+    \item \textbf{Excelente:} Límite superior de lo que se consideraría una prima muy baja o especialmente favorable para el perfil del individuo.
+    \item \textbf{Buena:} Límite superior de una prima razonable o aceptable para el perfil del individuo.
+    \item \textbf{Regular:} Límite superior de una prima que, aunque no es óptima, sigue siendo aceptable dentro del contexto del mercado y las características del individuo.
+\end{itemize}
+
+De este modo, el modelo no intenta predecir un único número exacto, sino proporcionar una referencia personalizada de rangos de prima, facilitando la comparación y la toma de decisiones informadas.
+\\
+\\
+\\
+\textbf{Ventajas de este enfoque:}
+\begin{itemize}
+    \item La alta dispersión y asimetría de la variable objetivo, así como la baja capacidad explicativa de los modelos lineales, sugieren que predecir intervalos puede ser más robusto y útil que intentar ajustar un valor puntual.
+    \item El enfoque por intervalos permite acomodar la variabilidad natural y los factores no observados presentes en el dataset, ofreciendo una predicción más realista y accionable.
+    \item Los intervalos pueden adaptarse a la distribución real de primas observada en el dataset, reflejando mejor la incertidumbre y la heterogeneidad de los casos individuales.
+\end{itemize}
+
+En la siguiente sección se mostrarán los resultados obtenidos aplicando este segundo enfoque de modelado basado en intervalos personalizados de prima.
+
+\section*{Resultados del modelado por intervalos personalizados}
+
+Para cada uno de los tres límites de prima (excelente, buena y regular), se entrenaron los cuatro modelos principales tanto sin ajuste de hiperparámetros como con ajuste. A continuación se presentan primero los resultados sin ajuste y luego los resultados con ajuste de hiperparámetros.
+
+\subsection*{Límite Excelente}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{excelentesinajuste.png}
+    \caption{Curvas de aprendizaje para el límite excelente (sin ajuste de hiperparámetros).}
+\end{figure}
+\begin{table}[H]
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Modelo} & \textbf{MAE} & \textbf{RMSE} & \textbf{R$^2$} \\
+\midrule
+LinearRegression & 16.68 & 21.89 & 0.72 \\
+GradientBoosting & 2.65 & 3.36 & 0.9935 \\
+RandomForest & 0.00 & 0.00 & 1.00 \\
+XGBoost & 0.17 & 0.30 & 0.9999 \\
+\bottomrule
+\end{tabular}
+\caption{Métricas para el límite excelente (sin ajuste de hiperparámetros).}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{excelenteconajuste.png}
+    \caption{Curvas de aprendizaje para el límite excelente (con ajuste de hiperparámetros).}
+\end{figure}
+\begin{table}[H]
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Modelo} & \textbf{MAE} & \textbf{RMSE} & \textbf{R$^2$} \\
+\midrule
+LinearRegression & 16.68 & 21.89 & 0.72 \\
+GradientBoosting & 0.48 & 0.67 & 0.9997 \\
+RandomForest & 0.26 & 0.52 & 0.9998 \\
+XGBoost & 0.47 & 0.65 & 0.9998 \\
+\bottomrule
+\end{tabular}
+\caption{Métricas para el límite excelente (con ajuste de hiperparámetros).}
+\end{table}
+
+\subsection*{Límite Bueno}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{buenosinajuste.png}
+    \caption{Curvas de aprendizaje para el límite bueno (sin ajuste de hiperparámetros).}
+\end{figure}
+\begin{table}[H]
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Modelo} & \textbf{MAE} & \textbf{RMSE} & \textbf{R$^2$} \\
+\midrule
+LinearRegression & 36.15 & 46.48 & 0.56 \\
+GradientBoosting & 4.15 & 5.70 & 0.9933 \\
+RandomForest & 0.01 & 0.13 & 1.00 \\
+XGBoost & 0.25 & 0.53 & 0.9999 \\
+\bottomrule
+\end{tabular}
+\caption{Métricas para el límite bueno (sin ajuste de hiperparámetros).}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{buenoconajuste.png}
+    \caption{Curvas de aprendizaje para el límite bueno (con ajuste de hiperparámetros).}
+\end{figure}
+\begin{table}[H]
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Modelo} & \textbf{MAE} & \textbf{RMSE} & \textbf{R$^2$} \\
+\midrule
+LinearRegression & 36.15 & 46.48 & 0.56 \\
+GradientBoosting & 0.73 & 1.07 & 0.9998 \\
+RandomForest & 0.24 & 0.73 & 0.9999 \\
+XGBoost & 0.71 & 1.03 & 0.9998 \\
+\bottomrule
+\end{tabular}
+\caption{Métricas para el límite bueno (con ajuste de hiperparámetros).}
+\end{table}
+
+\subsection*{Límite Regular}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{regularsinajuste.png}
+    \caption{Curvas de aprendizaje para el límite regular (sin ajuste de hiperparámetros).}
+\end{figure}
+\begin{table}[H]
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Modelo} & \textbf{MAE} & \textbf{RMSE} & \textbf{R$^2$} \\
+\midrule
+LinearRegression & 56.67 & 69.25 & 0.35 \\
+GradientBoosting & 5.86 & 7.79 & 0.9918 \\
+RandomForest & 0.00 & 0.09 & 1.00 \\
+XGBoost & 0.08 & 0.14 & 1.00 \\
+\bottomrule
+\end{tabular}
+\caption{Métricas para el límite regular (sin ajuste de hiperparámetros).}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{regularconajuste.png}
+    \caption{Curvas de aprendizaje para el límite regular (con ajuste de hiperparámetros).}
+\end{figure}
+\begin{table}[H]
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Modelo} & \textbf{MAE} & \textbf{RMSE} & \textbf{R$^2$} \\
+\midrule
+LinearRegression & 56.67 & 69.25 & 0.35 \\
+GradientBoosting & 0.49 & 0.72 & 0.9999 \\
+RandomForest & 0.29 & 1.08 & 0.9998 \\
+XGBoost & 0.64 & 0.92 & 0.9999 \\
+\bottomrule
+\end{tabular}
+\caption{Métricas para el límite regular (con ajuste de hiperparámetros).}
+\end{table}
+
+\subsection*{Conclusiones del modelado por intervalos}
+Los resultados muestran que el enfoque de predicción de intervalos personalizados permite obtener un ajuste mucho más preciso que la predicción de un valor único de prima. En todos los límites y para todos los modelos de ensamble (Random Forest, Gradient Boosting y XGBoost), los valores de MAE y RMSE son extremadamente bajos y los coeficientes de determinación R$^2$ se acercan a 1, indicando un ajuste casi perfecto.
+
+Incluso el modelo lineal mejora notablemente su desempeño respecto al modelado de la prima puntual, aunque sigue siendo superado por los modelos de ensamble y boosting.
+
+En conclusión, el modelado por intervalos personalizados es una alternativa mucho más robusta y útil para este tipo de datos, ya que permite acomodar la alta variabilidad y dispersión de la variable objetivo, proporcionando referencias realistas y personalizadas para la toma de decisiones en seguros médicos.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\end{itemize}
 
 \end{document}
