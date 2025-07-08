@@ -1,650 +1,471 @@
-\documentclass[12pt,a4paper]{article}
+\documentclass[12pt]{article}
 \usepackage[utf8]{inputenc}
-\usepackage[spanish]{babel}
 \usepackage{geometry}
-\usepackage{amsmath}
-\usepackage{amsfonts}
-\usepackage{amssymb}
 \usepackage{graphicx}
-\usepackage{hyperref}
 \usepackage{booktabs}
+\usepackage{array}
 \usepackage{longtable}
-\usepackage{float}
-\usepackage{enumitem}
-\usepackage{fancyhdr}
-\usepackage{titlesec}
-
 \geometry{margin=2.5cm}
-\pagestyle{fancy}
-\fancyhf{}
-\fancyhead[L]{Predicción de Costos de Seguro Médico - MEPS 2022}
-\fancyhead[R]{\thepage}
-\renewcommand{\headrulewidth}{0.4pt}
 
-\titleformat{\section}
-{\normalfont\Large\bfseries}{\thesection}{1em}{}
-\titleformat{\subsection}
-{\normalfont\large\bfseries}{\thesubsection}{1em}{}
-
-\title{Predicción personalizada de primas de seguro médico usando Machine Learning}
-\author{Diego Puentes, Universidad de La Habana}
-\date{Julio 2025}
-
+% Portada
 \begin{document}
-% Página de presentación
 \begin{titlepage}
-
     \centering
-    {\Huge\bfseries Predicción personalizada de primas de seguro médico usando Machine Learning \par}
-    \vspace{2cm}
-    {\Large Diego J. Puentes Fernández \par}
-    {\large Carrera: Ciencia de Datos \par}
-    {\large Universidad de La Habana \par}
+    {\LARGE\bfseries Predicción del coste de la prima “out of pocket” de seguro médico en MEPS 2022\\[1.5em]}
     \vfill
+    {\large Diego J. Puentes Fernandez\\}
+    {\large Ciencia de Datos}
 \end{titlepage}
 
-
-% Índice manual
-\newpage
-\section*{Índice}
-\begin{enumerate}[leftmargin=2cm]
-    \item Descripción del problema
-    \item Origen y descripción de los datos
-    \item Primer procesamiento y mapeo de los datos
-    \item Construcción del dataset para modelado
-    \item Visualización de variables principales
-    \item Caracterización de Outliers en la variable objetivo
-    \item Primera Propuesta de Modelado
-    \item Segunda propuesta de Modelado: Replanteando el Problema
-    \item Resultados del modelado por intervalos personalizados
-\end{enumerate}
+% Índice
+\tableofcontents
 \newpage
 
-\maketitle
+% Descripción del problema
+\section{Descripción del problema}
+El objetivo de este trabajo es predecir, a partir de características personales y de salud de los individuos, el coste de la prima “out of pocket” de su seguro médico utilizando técnicas de aprendizaje automático.
 
-\section*{Descripción del problema}
-El objetivo de este trabajo es predecir, a partir de características personales y de salud de los individuos, el coste de la prima ``out of pocket'' de su seguro médico utilizando técnicas de aprendizaje automático.
-
-\section*{Origen y descripción de los datos}
+% Origen y descripción de los datos
+\section{Origen y descripción de los datos}
 Los datos utilizados provienen de tres fuentes principales: el Medical Expenditure Panel Survey (MEPS), el Clinical Classifications Software Refined (CCSR) y el Crosswalk for Clinical Information Reporting (CCIR).
 
 \begin{itemize}
     \item \textbf{MEPS}: Encuesta nacional de gastos médicos en Estados Unidos, que recopila información detallada sobre el uso de servicios de salud, gastos y seguros médicos de la población.
     \item \textbf{CCSR}: Herramienta de clasificación que agrupa diagnósticos clínicos de acuerdo a códigos ICD-10, facilitando el análisis de condiciones de salud.
-    \item \textbf{CCIR}: Tabla de correspondencia que permite mapear códigos y categorías clínicas entre diferentes sistemas de clasificación.
+    \item \textbf{CCIR}: Tabla de correspondencia que permite mapear códigos y categorías clínicas de enfermedades crónicas.
 \end{itemize}
 
-
-\section*{Primer procesamiento y mapeo de los datos}
-
+% Primer procesamiento y mapeo de los datos
+\section{Primer procesamiento y mapeo de los datos}
 Se implementó una función de mapeo para convertir las columnas de los archivos CSV originales en nombres más entendibles y descriptivos, utilizando los archivos de usuario SAS provistos por MEPS (archivos .txt). Además, se realizó un análisis exploratorio de los datos, cuyos resultados principales se resumen en la siguiente tabla:
 
-\begin{table}[H]
-\centering
-\begin{tabular}{ll}
-\toprule
-\textbf{Indicador} & \textbf{Valor} \\
-\midrule
-\multicolumn{2}{l}{\textbf{Demografía (fyc)}} \\
-Columnas disponibles & dwelling\_unit\_id, person\_id, person\_unique\_id, panel\_number, age\_last\_birthday, sex, race\_ethnicity, \\ 
- & marital\_status\_2022, region\_2022, total\_healthcare\_exp\_2022, total\_out\_of\_pocket\_exp\_2022, \\ 
- & poverty\_category\_2022, insurance\_coverage\_2022, perceived\_health\_status, person\_weight\_2022 \\
+\begin{longtable}{|l|l|}
+\hline
+\textbf{Métrica} & \textbf{Valor} \\
+\hline
+Total de personas & 22431 \\
 Edad (mín, máx, Q1, Q3, media, mediana) & 0.0, 85.0, 23.0, 64.0, 43.56, 45.0 \\
-\midrule
-Cantidad de personas por raza &  \\
-\quad Non-Hispanic White only & 12211 \\
-\quad Hispanic & 4883 \\
-\quad Non-Hispanic Black only & 3244 \\
-\quad Non-Hispanic Asian only & 1220 \\
-\quad Non-Hispanic Other/multi-race & 873 \\
-\midrule
-Cantidad de personas por estado civil &  \\
-\quad Married & 8602 \\
-\quad Never married & 5495 \\
-\quad Under 16 - not applicable & 3765 \\
-\quad Divorced & 2546 \\
-\quad Widowed & 1619 \\
-\quad Separated & 397 \\
-\quad -7 & 6 \\
-\quad -8 & 1 \\
-\midrule
-Cantidad de personas por región &  \\
-\quad South & 8602 \\
-\quad West & 5693 \\
-\quad Midwest & 4498 \\
-\quad Northeast & 3443 \\
-\quad Inapplicable & 195 \\
-\midrule
-Cantidad de personas por categoría de pobreza &  \\
-\quad High income & 8282 \\
-\quad Middle income & 6269 \\
-\quad Poor/negative & 3725 \\
-\quad Low income & 3105 \\
-\quad Near poor & 1050 \\
-\midrule
-Cantidad de personas individuales & 22431 \\
-\midrule
-\multicolumn{2}{l}{\textbf{Condiciones médicas (cond)}} \\
-Columnas disponibles & person\_unique\_id, condition\_id, panel\_number, condition\_round, age\_at\_diagnosis, injury\_flag, icd10\_code, ccsr\_category\_1 \\
+\hline
+\multicolumn{2}{|c|}{\textbf{Cantidad de personas por raza}} \\
+\hline
+Non-Hispanic White only & 12211 \\
+Hispanic & 4883 \\
+Non-Hispanic Black only & 3244 \\
+Non-Hispanic Asian only & 1220 \\
+Non-Hispanic Other/multi-race & 873 \\
+\hline
+\multicolumn{2}{|c|}{\textbf{Cantidad de personas por estado civil}} \\
+\hline
+Married & 8602 \\
+Never married & 5495 \\
+Under 16 - not applicable & 3765 \\
+Divorced & 2546 \\
+Widowed & 1619 \\
+Separated & 397 \\
+-7 & 6 \\
+-8 & 1 \\
+\hline
+\multicolumn{2}{|c|}{\textbf{Cantidad de personas por región}} \\
+\hline
+South & 8602 \\
+West & 5693 \\
+Midwest & 4498 \\
+Northeast & 3443 \\
+Inapplicable & 195 \\
+\hline
+\multicolumn{2}{|c|}{\textbf{Cantidad de personas por categoría de pobreza}} \\
+\hline
+High income & 8282 \\
+Middle income & 6269 \\
+Poor/negative & 3725 \\
+Low income & 3105 \\
+Near poor & 1050 \\
+\hline
 Condiciones médicas distintas & 206 \\
 Media de condiciones por persona & 4.80 \\
-Top 5 condiciones más comunes &  \\
-\quad CIR007 & 5391 \\
-\quad END010 & 4268 \\
-\quad MUS010 & 3061 \\
-\quad END002 & 2334 \\
-\quad MBD005 & 2158 \\
-\midrule
-\multicolumn{2}{l}{\textbf{Primas y pagos (prpl)}} \\
-Estadísticas out\_of\_pocket\_premium\_edited & mín: 0.0, máx: 4583.33, media: 306.68, mediana: 212.5, Q1: 70.0, Q3: 433.33 \\
-Cantidad de valores válidos & 13075 \\
-\midrule
-\multicolumn{2}{l}{\textbf{Empleo (jobs)}} \\
-Estadísticas hours\_per\_week & mín: 1.0, máx: 168.0, media: 35.83, mediana: 40.0, Q1: 30.0, Q3: 40.0, válidos: 36126 \\
-Estadísticas hourly\_wage & mín: 0.0, máx: 115.0, media: 20.65, mediana: 18.0, Q1: 15.0, Q3: 24.0, válidos: 13522 \\
-\bottomrule
-\end{tabular}
+Top 5 condiciones más comunes & CIR007: 5391, END010: 4268, MUS010: 3061, END002: 2334, MBD005: 2158 \\
+\hline
+\end{longtable}
 
-\caption{Resumen de los principales resultados del análisis exploratorio de los datos procesados.}
-\end{table}
+% Descripción de la variable objetivo
+\section{Descripción de la variable objetivo}
+La variable objetivo es \texttt{prima out of pocket editada}, que es la prima mensual que pagan las personas por mantener su seguro médico, arreglada por el MEPS después de corregir errores (por eso el "editada"). Sus detalles son:
+
+\begin{itemize}
+    \item Entradas válidas: 10189
+    \item Mínimo: 1.00
+    \item Máximo: 4583.33
+    \item Media: 358.37
+    \item Mediana: 270.83
+    \item Q1: 136.00
+    \item Q3: 478.83
+    \item Varianza: 113310.34
+    \item Desviación estándar: 336.62
+    \item Dispersión (máx - mín): 4582.33
+    \item Cantidad de outliers (|z|>3): 186
+\end{itemize}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.7\textwidth]{distribucionvariableobjetivo.png}
+    \caption{Distribución de la variable objetivo}
+\end{figure}
+
+% Caracterización de outliers de la variable objetivo
+\section{Caracterización de outliers de la variable objetivo}
+A continuación se presenta un panorama general de las personas que son outliers en la variable objetivo, comparando sus características respecto al grupo general. Se observa que no presentan diferencias extremas ni especiales, por lo que se decidió prescindir de ellos para el entrenamiento de los modelos.
+
+\begin{longtable}{|l|c|c|}
+\hline
+\textbf{Métrica} & \textbf{Outliers} & \textbf{Resto} \\
+\hline
+Cantidad de outliers (|z|>3) & 186 & 10003 \\
+Porcentaje de outliers & 1.83\% & 98.17\% \\
+Media de edad & 36.76 & 42.13 \\
+Media de ccsr\_num\_total & 2.15 & 2.96 \\
+Media de ccsr\_otra\_condicion & 1.78 & 2.26 \\
+Proporción sexo\_Male & 0.46 & 0.48 \\
+region\_Midwest & 0.27 & 0.23 \\
+region\_Northeast & 0.18 & 0.17 \\
+region\_South & 0.19 & 0.35 \\
+region\_West & 0.35 & 0.26 \\
+estado\_civil\_Married & 0.55 & 0.48 \\
+estado\_civil\_Never married & 0.20 & 0.23 \\
+estado\_civil\_Separated & 0.00 & 0.01 \\
+estado\_civil\_Under 16 - not applicable & 0.23 & 0.15 \\
+estado\_civil\_Widowed & 0.01 & 0.04 \\
+raza\_etnicidad\_Non-Hispanic Asian only & 0.06 & 0.07 \\
+raza\_etnicidad\_Non-Hispanic Black only & 0.04 & 0.11 \\
+raza\_etnicidad\_Non-Hispanic Other race or multi-race & 0.02 & 0.04 \\
+raza\_etnicidad\_Non-Hispanic White only & 0.74 & 0.64 \\
+ccsr\_Essential hypertension & 0.13 & 0.21 \\
+ccsr\_Disorders of lipid metabolism & 0.11 & 0.16 \\
+ccsr\_Diabetes mellitus without complication & 0.02 & 0.08 \\
+ccsr\_Bacterial infections & 0.01 & 0.02 \\
+ccsr\_Osteoarthritis & 0.02 & 0.06 \\
+ccsr\_Cataract and other lens disorders & 0.01 & 0.02 \\
+ccsr\_Esophageal disorders & 0.02 & 0.06 \\
+ccsr\_Retinal and vitreous conditions & 0.01 & 0.02 \\
+ccsr\_Other general signs and symptoms & 0.02 & 0.03 \\
+ccsr\_Abnormal findings without diagnosis & 0.01 & 0.02 \\
+\hline
+\end{longtable}
+
+
+
+
+\section{Primera Propuesta de Modelo}
+A partir de los datos obtenidos y procesados, se construyó un dataset final con las siguientes columnas principales. En la siguiente tabla se indica si la columna se mantuvo igual, se le aplicó codificación (encoding) y el tipo de transformación realizada, de acuerdo al script de procesamiento:
+
+\begin{longtable}{|l|l|}
+\hline
+\textbf{Columna} & \textbf{Tipo de transformación} \\
+\hline
+edad & - \\
+estado\_salud\_percibido & Label Encoding (ordinal) \\
+ccsr\_num\_total & - \\
+ccsr\_otra\_condicion & - \\
+categoria\_pobreza & Label Encoding (ordinal) \\
+tiene\_historial\_empleo & Binaria (1 si tiene historial, 0 si no) \\
+horas\_por\_semana & Media de horas, imputada si falta \\
+sexo\_Male & One-hot encoding (binaria) \\
+raza\_etnicidad\_Non-Hispanic Asian only & One-hot encoding (binaria) \\
+raza\_etnicidad\_Non-Hispanic Black only & One-hot encoding (binaria) \\
+raza\_etnicidad\_Non-Hispanic Other race or multi-race & One-hot encoding (binaria) \\
+raza\_etnicidad\_Non-Hispanic White only & One-hot encoding (binaria) \\
+estado\_civil\_Married & One-hot encoding (binaria) \\
+estado\_civil\_Never married & One-hot encoding (binaria) \\
+estado\_civil\_Separated & One-hot encoding (binaria) \\
+estado\_civil\_Under 16 - not applicable & One-hot encoding (binaria) \\
+estado\_civil\_Widowed & One-hot encoding (binaria) \\
+region\_Midwest & One-hot encoding (binaria) \\
+region\_Northeast & One-hot encoding (binaria) \\
+region\_South & One-hot encoding (binaria) \\
+region\_West & One-hot encoding (binaria) \\
+ccsr\_Essential hypertension & One-hot encoding (binaria, top 10 CCSR) \\
+ccsr\_Disorders of lipid metabolism & One-hot encoding (binaria, top 10 CCSR) \\
+ccsr\_Diabetes mellitus without complication & One-hot encoding (binaria, top 10 CCSR) \\
+ccsr\_Bacterial infections & One-hot encoding (binaria, top 10 CCSR) \\
+ccsr\_Osteoarthritis & One-hot encoding (binaria, top 10 CCSR) \\
+ccsr\_Cataract and other lens disorders & One-hot encoding (binaria, top 10 CCSR) \\
+ccsr\_Esophageal disorders & One-hot encoding (binaria, top 10 CCSR) \\
+ccsr\_Retinal and vitreous conditions & One-hot encoding (binaria, top 10 CCSR) \\
+ccsr\_Other general signs and symptoms & One-hot encoding (binaria, top 10 CCSR) \\
+ccsr\_Abnormal findings without diagnosis & One-hot encoding (binaria, top 10 CCSR) \\
+seguro\_Public only & One-hot encoding (binaria) \\
+seguro\_Uninsured & One-hot encoding (binaria) \\
+prima\_out\_of\_pocket\_editada & Variable objetivo (sin transformación) \\
+\hline
+\end{longtable}
+
+El dataset resultante permite representar de forma numérica y categórica las principales características demográficas, socioeconómicas y de salud de cada individuo, facilitando su uso en modelos de aprendizaje automático supervisado.
 
 \vspace{1em}
 \noindent
-\textbf{Columnas disponibles en los datasets:}
+La distribución de las principales variables del dataset final se muestra a continuación. Estas visualizaciones permiten apreciar la diversidad y balance de los datos empleados para el modelado:
 
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.49\textwidth]{sexo.png}
+    \includegraphics[width=0.49\textwidth]{region.png}
+    \caption{Distribución de sexo y región}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.55\textwidth]{etnia.png}
+    
+    \caption{Distribución por etnia}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.80\textwidth]{enfermedades.png}
+    \vspace{4,0cm}
+    \includegraphics[width=0.80\textwidth]{variable.png}
+    \caption{Distribución por enfermedades y variable objetivo}
+\end{figure}
+
+\subsection*{Justificación de la selección de modelo}
+La selección del modelo para la predicción de la prima “out of pocket” se fundamentó en la exploración de la relación entre las variables predictoras y la variable objetivo. El análisis exploratorio mostró que la relación entre las variables independientes y la prima no es lineal, lo que sugiere que modelos lineales simples pueden no capturar adecuadamente la complejidad de los datos.
+
+No obstante, como punto de partida y para establecer una línea base de comparación, se implementó primero una regresión lineal. Esto permitió obtener una referencia inicial del desempeño y entender las limitaciones de los modelos lineales en este contexto. 
+
+Esta estrategia permitió comparar de manera objetiva los resultados y justificar la necesidad de emplear modelos no lineales para mejorar la capacidad predictiva sobre la variable objetivo.
+
+
+\subsection*{Resultados del ajuste de modelos y discusión}
+Tras el ajuste de hiperparámetros y la comparación de varios modelos (regresión lineal, Random Forest, Gradient Boosting y XGBoost), se observó que ninguno de los modelos logró un desempeño satisfactorio respecto al dataset y la tarea planteada. A continuación se muestra la tabla de métricas obtenidas para cada modelo:
+
+\begin{table}[h!]
+    \centering
+    \begin{tabular}{lccccc}
+        \toprule
+        Modelo & MAE & RMSE & $R^2$ & Bias & Varianza \\
+        \midrule
+        LinearRegression & 191.60 & 252.71 & 0.06 & -0.15 & 4786.28 \\
+        RandomForest & 187.35 & 248.62 & 0.09 & 2.86 & 9098.07 \\
+        GradientBoosting & 186.89 & 247.47 & 0.09 & 0.84 & 7156.23 \\
+        XGBoost & 186.80 & 247.24 & 0.10 & 0.70 & 7099.15 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Comparación de modelos tras ajuste de hiperparámetros.}
+\end{table}
+
+
+
+Como se aprecia en la tabla y en las gráficas, los valores de $R^2$ son muy bajos (cercanos a cero), y los errores absolutos y cuadráticos medios (MAE y RMSE) son elevados en todos los casos. Incluso tras el ajuste de hiperparámetros, los modelos no logran capturar la complejidad de la variable objetivo ni mejorar significativamente respecto a una predicción trivial. Esto indica que la relación entre las variables predictoras y la prima “out of pocket” es débil o está fuertemente condicionada por factores no presentes en el dataset.
+
+Esta dificultad se explica, en parte, por la naturaleza de la variable objetivo: su distribución es altamente dispersa y presenta una gran cantidad de valores atípicos, como se mostró en el análisis exploratorio. Además, la variable objetivo depende de factores externos (como políticas de aseguradoras, subsidios, condiciones particulares de los individuos) que no están reflejados en las variables disponibles. La combinación de alta dispersión, presencia de outliers y falta de variables explicativas clave limita la capacidad predictiva de los modelos, incluso los más complejos y ajustados.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=1\textwidth]{modelosmalosajustes.png}
+    \caption{Curvas de aprendizaje y ajuste de los modelos principales.}
+\end{figure}
+
+En conclusión, los resultados obtenidos muestran que, dadas las características del dataset y la variable objetivo, la predicción precisa de la prima “out of pocket” es una tarea desafiante y limitada con la información disponible.
+
+\vspace{3cm}
+\section{Segunda Propuesta de Modelado: Cambiando la Pregunta}
+Ante los resultados insatisfactorios obtenidos al intentar predecir el valor exacto de la prima “out of pocket” para cada persona, se exploró un nuevo enfoque de modelado. En lugar de predecir un único valor, se propuso estimar, para cada individuo, un conjunto de tres valores que definan los límites superiores de rangos de conveniencia para la prima esperada, basados en personas similares.
+
+\subsection*{Definición de los rangos de conveniencia}
+La idea central es que, para cada persona, el modelo devuelva una lista de tres valores:\\
 \begin{itemize}
-    \item \textbf{Condiciones médicas (cond):} person\_unique\_id, condition\_id, panel\_number, condition\_round, age\_at\_diagnosis, injury\_flag, icd10\_code, ccsr\_category\_1
-    \item \textbf{Características personales y demográficas (fyc):} dwelling\_unit\_id, person\_id, person\_unique\_id, panel\_number, age\_last\_birthday, sex, race\_ethnicity, marital\_status\_2022, region\_2022, total\_healthcare\_exp\_2022, total\_out\_of\_pocket\_exp\_2022, poverty\_category\_2022, insurance\_coverage\_2022, perceived\_health\_status, person\_weight\_2022
-    \item \textbf{Empleo (jobs):} person\_unique\_id, job\_id, panel\_number, round\_number, insurance\_offered, temporary\_job, salaried\_employee, hourly\_wage, hours\_per\_week
-    \item \textbf{Historial de seguros (prpl):} person\_unique\_id, panel\_number, round\_number, insurance\_coverage, out\_of\_pocket\_premium, out\_of\_pocket\_premium\_edited
+    \item El primer valor corresponde al límite superior de la categoría \textbf{Excelente}.
+    \item El segundo valor es el límite superior de la categoría \textbf{Bueno}.
+    \item El tercer valor es el límite superior de la categoría \textbf{Regular}.
 \end{itemize}
+De este modo, se obtiene un rango personalizado de referencia para la prima, en vez de una predicción puntual, lo que resulta más robusto ante la alta dispersión y variabilidad de la variable objetivo.
 
-No todas estas columnas ofrecían información relevante para el objetivo del trabajo. Para facilitar el análisis y la integración de la información, se decidió crear un archivo JSON unificado por persona, con la siguiente estructura anidada de campos principales:
-
-\begin{verbatim}
-{
-  "edad": ,
-  "sexo": ,
-  "raza_etnicidad": ,
-  "estado_civil": ,
-  "region": ,
-  "categoria_pobreza": ,
-  "cobertura_seguro": ,
-  "estado_salud_percibido": ,
-  "condiciones_medicas_actuales": [
-    {
-      "descripcion_ccsr": ,
-      "edad_diagnostico": 
-    },
-    ...
-  ],
-  "condiciones_medicas_pasadas": [],
-  "historial_empleo": [
-    {
-      "seguro_ofrecido": ,
-      "trabajo_temporal": ,
-      "empleado_asalariado": ,
-      "salario_por_hora": ,
-      "horas_por_semana": 
-    },
-    ...
-  ],
-  "historial_seguros": [
-    {
-      "cobertura_seguro": ,
-      "prima_out_of_pocket_editada": 
-    },
-    ...
-  ]
-}
-\end{verbatim}
-
-Para la generación del archivo JSON final, se aplicaron los siguientes filtros y criterios de limpieza:
-\begin{itemize}
-    \item Se filtró la información de cada persona para conservar únicamente los registros correspondientes al máximo número de round reflejado en su historial de seguros. Esto garantiza que no exista desfase temporal entre la información demográfica, clínica y de seguros considerada para el análisis.
-    \item Se seleccionaron únicamente aquellas personas que tuvieran al menos una entrada válida de la variable objetivo, es decir, un valor válido de \texttt{prima\_out\_of\_pocket\_editada} en su historial de seguros.
-    \item Para cada persona, se eliminaron del historial de seguros los registros que no tuvieran un valor válido de \texttt{prima\_out\_of\_pocket\_editada}, de modo que sólo se conservaron las entradas relevantes para el modelado.
-
-
-
-\section*{Construcción del dataset para modelado}
-
-A partir del archivo JSON unificado, se construyó un dataset tabular donde cada fila representa un embedding asociado a una persona individual. El proceso de construcción y transformación de variables fue el siguiente:
-\begin{itemize}
-    \item Se mantuvieron los valores originales de las variables numéricas.
-    \item Se aplicó codificación one-hot (one hot encoding) a las variables categóricas principales (sexo, raza/etnicidad, estado civil, región).
-    \item Se identificaron las 20 enfermedades (CCSR) con mayor correlación con la variable objetivo y se agregaron como features binarios (presencia/ausencia) mediante label encoding.
-    \item Se agregó el número total de enfermedades por persona (\texttt{ccsr\_num\_total}) y el número de enfermedades no incluidas entre las 20 principales (\texttt{ccsr\_otra\_condicion}).
-    \item Para la variable objetivo (\texttt{prima\_out\_of\_pocket\_editada}), si una persona tenía más de una entrada válida, se tomó la media de sus valores.
-\end{itemize}
-
-En resumen, las columnas seleccionadas y la transformación aplicada a cada una fueron:
-
-\begin{table}[H]
-\centering
-\begin{tabular}{ll}
-\toprule
-\textbf{Columna} & \textbf{Transformación aplicada} \\
-\midrule
-edad & Se mantuvo igual (numérica) \\
-estado\_salud\_percibido & Label encoding (1-4) \\
-ccsr\_num\_total & Se mantuvo igual (numérica) \\
-ccsr\_otra\_condicion & Se mantuvo igual (numérica) \\
-sexo\_Male & One hot encoding \\
-raza\_etnicidad\_Non-Hispanic Asian only & One hot encoding \\
-raza\_etnicidad\_Non-Hispanic Black only & One hot encoding \\
-raza\_etnicidad\_Non-Hispanic Other race or multi-race & One hot encoding \\
-raza\_etnicidad\_Non-Hispanic White only & One hot encoding \\
-estado\_civil\_Married & One hot encoding \\
-estado\_civil\_Never married & One hot encoding \\
-estado\_civil\_Separated & One hot encoding \\
-estado\_civil\_Under 16 - not applicable & One hot encoding \\
-estado\_civil\_Widowed & One hot encoding \\
-region\_Midwest & One hot encoding \\
-region\_Northeast & One hot encoding \\
-region\_South & One hot encoding \\
-region\_West & One hot encoding \\
-ccsr\_Essential hypertension & One hot encoding (presencia/ausencia) \\
-ccsr\_Disorders of lipid metabolism & One hot encoding (presencia/ausencia) \\
-ccsr\_Diabetes mellitus without complication & One hot encoding (presencia/ausencia) \\
-ccsr\_Bacterial infections & One hot encoding (presencia/ausencia) \\
-ccsr\_Osteoarthritis & One hot encoding (presencia/ausencia) \\
-ccsr\_Cataract and other lens disorders & One hot encoding (presencia/ausencia) \\
-ccsr\_Esophageal disorders & One hot encoding (presencia/ausencia) \\
-ccsr\_Retinal and vitreous conditions & One hot encoding (presencia/ausencia) \\
-ccsr\_Other general signs and symptoms & One hot encoding (presencia/ausencia) \\
-ccsr\_Abnormal findings without diagnosis & One hot encoding (presencia/ausencia) \\
-ccsr\_Other specified bone disease and musculoskeletal deformities & One hot encoding (presencia/ausencia) \\
-ccsr\_Otitis media & One hot encoding (presencia/ausencia) \\
-ccsr\_Osteoporosis & One hot encoding (presencia/ausencia) \\
-ccsr\_Thyroid disorders & One hot encoding (presencia/ausencia) \\
-ccsr\_Neurodevelopmental disorders & One hot encoding (presencia/ausencia) \\
-ccsr\_Other and ill-defined heart disease & One hot encoding (presencia/ausencia) \\
-ccsr\_Other specified upper respiratory infections & One hot encoding (presencia/ausencia) \\
-ccsr\_Nutritional deficiencies & One hot encoding (presencia/ausencia) \\
-ccsr\_Other specified inflammatory condition of skin & One hot encoding (presencia/ausencia) \\
-ccsr\_General sensation/perception signs and symptoms & One hot encoding (presencia/ausencia) \\
-prima\_out\_of\_pocket\_editada & Se mantuvo igual (media por persona si había más de una entrada) \\
-\bottomrule
-\end{tabular}
-\caption{Resumen de las columnas y transformaciones aplicadas en el dataset final para modelado.}
-\end{table}
-
-\section*{Visualización de variables principales}
-\indent En esta sección se presentan las principales visualizaciones generadas durante el análisis exploratorio y la construcción del dataset. Todas las imágenes fueron exportadas desde el notebook y se encuentran en la raíz del proyecto.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{region.png}
-    \caption{Cantidad de personas por región.}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.7\textwidth]{raza.png}
-    \caption{Cantidad de personas por raza/etnicidad.}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.9\textwidth]{enfermedades.png}
-    \caption{Cantidad de personas con cada una de las 20 enfermedades principales (CCSR).}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{rango edad.png}
-    \caption{Cantidad de personas por rango de edad (5 años).}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.9\textwidth]{rango pagos.png}
-    \caption{Cantidad de personas por rango de pagos de prima (de 100 en 100).}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.5\textwidth]{hombres_mujeres.png}
-    \caption{Cantidad de personas por sexo.}
-\end{figure}
-
-
-
-\section*{Caracterización de Outliers en la variable objetivo}
-Se identificaron los outliers de la variable objetivo (\texttt{prima\_out\_of\_pocket\_editada}) como aquellos con $|z| > 3$ respecto a la media. A continuación se resumen sus características comparadas con el resto del dataset:
-
-\begin{table}[H]
-\centering
-\begin{tabular}{lcc}
-\toprule
-\textbf{Característica} & \textbf{Outliers} & \textbf{Resto} \\
-\midrule
-Cantidad de outliers & 186 & 10000+ \\
-Porcentaje sobre el total & 1.83\% & 98.17\% \\
-Edad (media) & 36.76 & 42.13 \\
-Nº total de enfermedades (media) & 2.15 & 2.96 \\
-Nº de otras condiciones (media) & 1.53 & 2.00 \\
-Sexo masculino (proporción) & 0.46 & 0.48 \\
-\midrule
-\multicolumn{3}{l}{\textbf{Región (proporción)}} \\
-Midwest & 0.27 & 0.23 \\
-Northeast & 0.18 & 0.17 \\
-South & 0.19 & 0.35 \\
-West & 0.35 & 0.26 \\
-\midrule
-\multicolumn{3}{l}{\textbf{Estado civil (proporción)}} \\
-Married & 0.55 & 0.48 \\
-Never married & 0.20 & 0.23 \\
-Separated & 0.00 & 0.01 \\
-Under 16 - not applicable & 0.23 & 0.15 \\
-Widowed & 0.01 & 0.04 \\
-\midrule
-\multicolumn{3}{l}{\textbf{Raza/etnicidad (proporción)}} \\
-Non-Hispanic Asian only & 0.06 & 0.07 \\
-Non-Hispanic Black only & 0.04 & 0.11 \\
-Non-Hispanic Other/multi-race & 0.02 & 0.04 \\
-Non-Hispanic White only & 0.74 & 0.64 \\
-\midrule
-\multicolumn{3}{l}{\textbf{Enfermedades principales (proporción)}} \\
-Essential hypertension & 0.13 & 0.21 \\
-Disorders of lipid metabolism & 0.11 & 0.16 \\
-Diabetes mellitus without complication & 0.02 & 0.08 \\
-Bacterial infections & 0.01 & 0.02 \\
-Osteoarthritis & 0.02 & 0.06 \\
-Cataract and other lens disorders & 0.01 & 0.02 \\
-Esophageal disorders & 0.02 & 0.06 \\
-Retinal and vitreous conditions & 0.01 & 0.02 \\
-Other general signs and symptoms & 0.02 & 0.03 \\
-Abnormal findings without diagnosis & 0.01 & 0.02 \\
-Other specified bone disease and musculoskeletal deformities & 0.00 & 0.01 \\
-Otitis media & 0.02 & 0.03 \\
-Osteoporosis & 0.01 & 0.01 \\
-Thyroid disorders & 0.05 & 0.07 \\
-Neurodevelopmental disorders & 0.08 & 0.04 \\
-Other and ill-defined heart disease & 0.00 & 0.01 \\
-Other specified upper respiratory infections & 0.03 & 0.03 \\
-Nutritional deficiencies & 0.02 & 0.02 \\
-Other specified inflammatory condition of skin & 0.04 & 0.03 \\
-General sensation/perception signs and symptoms & 0.00 & 0.00 \\
-\bottomrule
-\end{tabular}
-\caption{Comparación de características entre outliers y el resto del dataset para la variable objetivo.}
-\end{table}
-
-Los outliers representan el 1.8\% de la muestra y tienden a ser ligeramente más jóvenes, con menos enfermedades y menor proporción de condiciones crónicas que el resto. La mayoría son de raza blanca no hispana y residen en la región Oeste o Midwest, con menor presencia en el Sur. No se observa una diferencia marcada en sexo ni en estado civil, aunque hay una ligera mayor proporción de casados y menores de 16 años. En cuanto a enfermedades, los outliers presentan menor prevalencia de hipertensión, diabetes y dislipidemias.\\\\
-En conclusión, los outliers no presentan características demográficas o clínicas radicalmente distintas al resto del dataset, lo que sugiere que los valores extremos de la variable objetivo pueden deberse a factores no capturados en las variables disponibles o a variabilidad natural en los datos.
-
-\section*{Primera Propuesta de Modelado}
-La primera propuesta de modelado consistió en construir un modelo capaz de predecir con exactitud el valor de la prima ``out of pocket'' que una persona debería pagar por su seguro médico, a partir de las variables disponibles en el dataset procesado.
-
-Sin embargo, la predicción exacta de la prima ``out of pocket'' resulta un reto considerable con la información disponible, y requiere considerar enfoques alternativos de modelado, técnicas de manejo de outliers y posiblemente la incorporación de variables adicionales, como se muestra a continuación.
-
-\subsection*{Métricas de evaluación utilizadas}
-Para evaluar el desempeño de los modelos de regresión en la predicción de la prima ``out of pocket'', se emplearon las siguientes métricas:
-\begin{itemize}
-    \item \textbf{MAE (Mean Absolute Error / Error Absoluto Medio):} Indica el promedio de las diferencias absolutas entre los valores predichos y los reales. Es una métrica intuitiva y robusta frente a outliers, ya que mide el error promedio en las mismas unidades que la variable objetivo.
-    \item \textbf{RMSE (Root Mean Squared Error / Raíz del Error Cuadrático Medio):} Penaliza más fuertemente los errores grandes que el MAE, ya que eleva al cuadrado las diferencias antes de promediar. Es útil para identificar si el modelo comete errores grandes con frecuencia.
-    \item \textbf{R$^2$ (Coeficiente de determinación):} Mide la proporción de la varianza de la variable objetivo explicada por el modelo. Un valor cercano a 1 indica buen ajuste, mientras que valores cercanos a 0 o negativos indican bajo poder predictivo.
-\end{itemize}
-
-Estas métricas son relevantes porque permiten comparar modelos de manera objetiva, considerando tanto la magnitud promedio del error (MAE), la sensibilidad a errores grandes (RMSE) y la capacidad explicativa global del modelo (R$^2$). 
-
-\section*{Modelos para el primer problema}
-Para abordar la predicción de la prima ``out of pocket'' se seleccionaron cuatro modelos de regresión representativos:
-\begin{itemize}
-    \item \textbf{Linear Regression}: Modelo lineal base, útil como referencia y para identificar relaciones lineales simples.
-    \item \textbf{Random Forest}: Ensamble de árboles de decisión, robusto ante relaciones no lineales y capaz de manejar variables categóricas codificadas.
-    \item \textbf{Gradient Boosting}: Ensamble secuencial que optimiza el error, adecuado para capturar patrones complejos y relaciones no lineales.
-    \item \textbf{XGBoost}: Variante avanzada de boosting, eficiente y con regularización, ampliamente utilizada en competencias de ciencia de datos.
-\end{itemize}
-Estos modelos fueron elegidos por su complementariedad: permiten comparar desde un enfoque lineal simple hasta técnicas de ensamble y boosting que pueden capturar relaciones más complejas y no lineales presentes en los datos.
-
-\subsection*{Resultados sin ajuste de hiperparámetros}
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{modelossin hieprarametros.png}
-    \caption{Curvas de aprendizaje de los 4 modelos sin ajuste de hiperparámetros.}
-\end{figure}
-
-\begin{table}[H]
-\centering
-\begin{tabular}{lccc}
-\toprule
-\textbf{Modelo} & \textbf{MAE} & \textbf{RMSE} & \textbf{R$^2$} \\
-\midrule
-LinearRegression & 191.64 & 252.57 & 0.06 \\
-RandomForest & 203.96 & 269.36 & -0.07 \\
-GradientBoosting & 187.45 & 248.91 & 0.08 \\
-XGBoost & 198.06 & 260.85 & -0.01 \\
-\bottomrule
-\end{tabular}
-\caption{Comparación de métricas de los modelos sin ajuste de hiperparámetros.}
-\end{table}
-
-\subsection*{Resultados con ajuste de hiperparámetros}
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.8\textwidth]{modelosconhiperparametros.png}
-    \caption{Curvas de aprendizaje de los 4 modelos tras ajuste de hiperparámetros.}
-\end{figure}
-
-\begin{table}[H]
-\centering
-\begin{tabular}{lccc}
-\toprule
-\textbf{Modelo} & \textbf{MAE} & \textbf{RMSE} & \textbf{R$^2$} \\
-\midrule
-LinearRegression & 191.64 & 252.57 & 0.06 \\
-RandomForest & 188.90 & 250.27 & 0.07 \\
-GradientBoosting & 187.30 & 248.44 & 0.09 \\
-XGBoost & 187.36 & 248.76 & 0.08 \\
-\bottomrule
-\end{tabular}
-\caption{Comparación de métricas de los modelos tras ajuste de hiperparámetros.}
-\end{table}
-
-\subsection*{Conclusiones sobre el desempeño de los modelos}
-
-En general, todos los modelos presentan un desempeño modesto, con valores de MAE y RMSE relativamente altos en comparación con la media de la variable objetivo, y valores de R$^2$ bajos (cercanos a 0). Esto indica que la capacidad explicativa de los modelos sobre la variabilidad de la prima es limitada.
-
-El ajuste de hiperparámetros mejora ligeramente el desempeño de los modelos de ensamble (Random Forest, Gradient Boosting y XGBoost), pero la mejora es marginal. El modelo lineal sirve como referencia y muestra que la relación entre las variables disponibles y la prima no es predominantemente lineal.
-
-Las razones de este desempeño limitado están asociadas a la estructura del dataset:
-\begin{itemize}
-    \item La variable objetivo presenta una alta dispersión y asimetría, con una cola de valores extremos (outliers), lo que dificulta que los modelos ajusten correctamente tanto los valores típicos como los atípicos.
-    \item Las variables explicativas disponibles muestran correlaciones muy bajas con la variable objetivo, tanto lineales como no lineales, y en conjunto los modelos lineales apenas explican un 5\% de la variabilidad de la prima (R$^2$ multivariable lineal $\approx$ 0.05).
-    \item Ninguna variable individualmente, ni siquiera con ajustes polinómicos, logra explicar una fracción significativa de la variabilidad de la prima (todas las correlaciones y R$^2$ individuales son cercanas a cero).
-    \item Existen relaciones complejas y factores no observados que los modelos no pueden capturar completamente, lo que justifica la necesidad de modelos no lineales, a pesar del poco escazo éxito en esta tarea.
-\end{itemize}
-En conclusión, aunque los modelos avanzados de boosting y ensamble logran un desempeño ligeramente superior, la predicción exacta de la prima ``out of pocket'' sigue siendo un reto considerable con la información disponible.
-
-
-\section*{Segunda propuesta de Modelado: Replanteando el Problema}
-
-Ante la dificultad de predecir con precisión un único valor de prima ``out of pocket'' para cada individuo, se propone un replanteamiento del problema: en lugar de estimar un valor puntual, predecir \textbf{intervalos de primas} que sean relevantes y útiles para la toma de decisiones.
-
-En este enfoque, para cada individuo se busca determinar una lista de tres valores que representen límites superiores de intervalos de prima:
-\begin{itemize}
-    \item \textbf{Excelente:} Límite superior de lo que se consideraría una prima muy baja o especialmente favorable para el perfil del individuo.
-    \item \textbf{Buena:} Límite superior de una prima razonable o aceptable para el perfil del individuo.
-    \item \textbf{Regular:} Límite superior de una prima que, aunque no es óptima, sigue siendo aceptable dentro del contexto del mercado y las características del individuo.
-\end{itemize}
-
-De este modo, el modelo no intenta predecir un único número exacto, sino proporcionar una referencia personalizada de rangos de prima, facilitando la comparación y la toma de decisiones informadas.
-\\
-\\
-\\
-\textbf{Ventajas de este enfoque:}
-\begin{itemize}
-    \item La alta dispersión y asimetría de la variable objetivo, así como la baja capacidad explicativa de los modelos lineales, sugieren que predecir intervalos puede ser más robusto y útil que intentar ajustar un valor puntual.
-    \item El enfoque por intervalos permite acomodar la variabilidad natural y los factores no observados presentes en el dataset, ofreciendo una predicción más realista y accionable.
-    \item Los intervalos pueden adaptarse a la distribución real de primas observada en el dataset, reflejando mejor la incertidumbre y la heterogeneidad de los casos individuales.
-\end{itemize}
-
-En la siguiente sección se mostrarán los resultados obtenidos aplicando este segundo enfoque de modelado basado en intervalos personalizados de prima.
-
-\section*{Resultados del modelado por intervalos personalizados}
-
-Para cada uno de los tres límites de prima (excelente, buena y regular), se entrenaron los cuatro modelos principales tanto sin ajuste de hiperparámetros como con ajuste. A continuación se presentan primero los resultados sin ajuste y luego los resultados con ajuste de hiperparámetros.
-
-\subsection*{Límite Excelente}
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.7\textwidth]{excelentesinajuste.png}
-    \caption{Curvas de aprendizaje para el límite excelente (sin ajuste de hiperparámetros).}
-\end{figure}
-\begin{table}[H]
-\centering
-\begin{tabular}{lccc}
-\toprule
-\textbf{Modelo} & \textbf{MAE} & \textbf{RMSE} & \textbf{R$^2$} \\
-\midrule
-LinearRegression & 16.68 & 21.89 & 0.72 \\
-GradientBoosting & 2.65 & 3.36 & 0.9935 \\
-RandomForest & 0.00 & 0.00 & 1.00 \\
-XGBoost & 0.17 & 0.30 & 0.9999 \\
-\bottomrule
-\end{tabular}
-\caption{Métricas para el límite excelente (sin ajuste de hiperparámetros).}
-\end{table}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.7\textwidth]{excelenteconajuste.png}
-    \caption{Curvas de aprendizaje para el límite excelente (con ajuste de hiperparámetros).}
-\end{figure}
-\begin{table}[H]
-\centering
-\begin{tabular}{lccc}
-\toprule
-\textbf{Modelo} & \textbf{MAE} & \textbf{RMSE} & \textbf{R$^2$} \\
-\midrule
-LinearRegression & 16.68 & 21.89 & 0.72 \\
-GradientBoosting & 0.48 & 0.67 & 0.9997 \\
-RandomForest & 0.26 & 0.52 & 0.9998 \\
-XGBoost & 0.47 & 0.65 & 0.9998 \\
-\bottomrule
-\end{tabular}
-\caption{Métricas para el límite excelente (con ajuste de hiperparámetros).}
-\end{table}
-
-\subsection*{Límite Bueno}
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.7\textwidth]{buenosinajuste.png}
-    \caption{Curvas de aprendizaje para el límite bueno (sin ajuste de hiperparámetros).}
-\end{figure}
-\begin{table}[H]
-\centering
-\begin{tabular}{lccc}
-\toprule
-\textbf{Modelo} & \textbf{MAE} & \textbf{RMSE} & \textbf{R$^2$} \\
-\midrule
-LinearRegression & 36.15 & 46.48 & 0.56 \\
-GradientBoosting & 4.15 & 5.70 & 0.9933 \\
-RandomForest & 0.01 & 0.13 & 1.00 \\
-XGBoost & 0.25 & 0.53 & 0.9999 \\
-\bottomrule
-\end{tabular}
-\caption{Métricas para el límite bueno (sin ajuste de hiperparámetros).}
-\end{table}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.7\textwidth]{buenoconajuste.png}
-    \caption{Curvas de aprendizaje para el límite bueno (con ajuste de hiperparámetros).}
-\end{figure}
-\begin{table}[H]
-\centering
-\begin{tabular}{lccc}
-\toprule
-\textbf{Modelo} & \textbf{MAE} & \textbf{RMSE} & \textbf{R$^2$} \\
-\midrule
-LinearRegression & 36.15 & 46.48 & 0.56 \\
-GradientBoosting & 0.73 & 1.07 & 0.9998 \\
-RandomForest & 0.24 & 0.73 & 0.9999 \\
-XGBoost & 0.71 & 1.03 & 0.9998 \\
-\bottomrule
-\end{tabular}
-\caption{Métricas para el límite bueno (con ajuste de hiperparámetros).}
-\end{table}
-
-\subsection*{Límite Regular}
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.7\textwidth]{regularsinajuste.png}
-    \caption{Curvas de aprendizaje para el límite regular (sin ajuste de hiperparámetros).}
-\end{figure}
-\begin{table}[H]
-\centering
-\begin{tabular}{lccc}
-\toprule
-\textbf{Modelo} & \textbf{MAE} & \textbf{RMSE} & \textbf{R$^2$} \\
-\midrule
-LinearRegression & 56.67 & 69.25 & 0.35 \\
-GradientBoosting & 5.86 & 7.79 & 0.9918 \\
-RandomForest & 0.00 & 0.09 & 1.00 \\
-XGBoost & 0.08 & 0.14 & 1.00 \\
-\bottomrule
-\end{tabular}
-\caption{Métricas para el límite regular (sin ajuste de hiperparámetros).}
-\end{table}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.7\textwidth]{regularconajuste.png}
-    \caption{Curvas de aprendizaje para el límite regular (con ajuste de hiperparámetros).}
-\end{figure}
-\begin{table}[H]
-\centering
-\begin{tabular}{lccc}
-\toprule
-\textbf{Modelo} & \textbf{MAE} & \textbf{RMSE} & \textbf{R$^2$} \\
-\midrule
-LinearRegression & 56.67 & 69.25 & 0.35 \\
-GradientBoosting & 0.49 & 0.72 & 0.9999 \\
-RandomForest & 0.29 & 1.08 & 0.9998 \\
-XGBoost & 0.64 & 0.92 & 0.9999 \\
-\bottomrule
-\end{tabular}
-\caption{Métricas para el límite regular (con ajuste de hiperparámetros).}
-\end{table}
-
-\subsection*{Conclusiones del modelado por intervalos}
-Los resultados muestran que el enfoque de predicción de intervalos personalizados permite obtener un ajuste mucho más preciso que la predicción de un valor único de prima. En todos los límites y para todos los modelos de ensamble (Random Forest, Gradient Boosting y XGBoost), los valores de MAE y RMSE son extremadamente bajos y los coeficientes de determinación R$^2$ se acercan a 1, indicando un ajuste casi perfecto.
-
-Incluso el modelo lineal mejora notablemente su desempeño respecto al modelado de la prima puntual, aunque sigue siendo superado por los modelos de ensamble y boosting.
-
-En conclusión, el modelado por intervalos personalizados es una alternativa mucho más robusta y útil para este tipo de datos, ya que permite acomodar la alta variabilidad y dispersión de la variable objetivo, proporcionando referencias realistas y personalizadas para la toma de decisiones en seguros médicos.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-\end{itemize}
+\subsection*{Lógica y construcción de los rangos}
+Para construir estos límites, se siguió la siguiente lógica:
+\begin{enumerate}
+    \item Para cada persona del conjunto de test, se identifican los individuos más similares en el conjunto de entrenamiento, utilizando las variables predictoras (excluyendo la variable objetivo para evitar fuga de información).
+    \item Sobre el conjunto de personas similares, se calcula la distribución de la prima “out of pocket” y se determinan los percentiles que definen los límites de las categorías: por ejemplo, el percentil 25 para el límite de \textbf{Excelente}, el percentil 50 para \textbf{Bueno} y el percentil 75 para \textbf{Regular}. Estos valores pueden ajustarse según la conveniencia o el criterio del análisis.
+    \item Así, para cada persona, el modelo devuelve una terna de valores que acotan los rangos de prima esperada según su perfil, en vez de un único valor.
+\end{enumerate}
+
+\subsection*{Prevención de fuga de información}
+Un aspecto fundamental de este enfoque es evitar la fuga de información (\textit{data leakage}). Para ello, la búsqueda de personas similares y el cálculo de los rangos se realiza siempre utilizando únicamente el conjunto de entrenamiento, sin acceder a los valores reales de la variable objetivo en el conjunto de test. De este modo, se garantiza que la estimación de los rangos es válida y no está contaminada por información futura o no disponible en un escenario real.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 \end{document}

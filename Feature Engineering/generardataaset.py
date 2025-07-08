@@ -73,18 +73,49 @@ def main():
     # Calcular correlación absoluta con la variable objetivo
     y_corr = df['prima_out_of_pocket_editada']
     corrs = ccsr_matrix.apply(lambda col: abs(col.corr(y_corr, method='spearman')), axis=0)
-    top_ccsr = corrs.sort_values(ascending=False).head(20).index.tolist()
+    top_ccsr = corrs.sort_values(ascending=False).head(10).index.tolist()
 
-    # Crear columnas binarias solo para las top correlacionadas
+    # Crear columnas binarias solo para las top correlacionadas (top 10)
     for ccsr in top_ccsr:
         df[f'ccsr_{ccsr}'] = ccsr_matrix[ccsr]
 
-    # Contar cuántas condiciones "otras" tiene cada persona
+    # Contar cuántas condiciones "otras" tiene cada persona (no top 10)
     df['ccsr_otra_condicion'] = df['ccsr_conditions'].apply(lambda conds: sum([(c not in top_ccsr) for c in conds]))
 
     # Feature: número total de condiciones
     df['ccsr_num_total'] = df['ccsr_conditions'].apply(len)
 
+    # One-hot encoding de tipo de seguro (cobertura_seguro)
+    df = pd.get_dummies(df, columns=['cobertura_seguro'], prefix='seguro', drop_first=True, dtype=int)
+
+    # Label encoding para categoria_pobreza
+    if 'categoria_pobreza' in df.columns:
+        le_pobreza = LabelEncoder()
+        df['categoria_pobreza'] = le_pobreza.fit_transform(df['categoria_pobreza'].astype(str))
+    else:
+        df['categoria_pobreza'] = 0
+
+    # One-hot encoding de si tiene historial_empleo (1 si hay al menos una entrada, 0 si no)
+    df['tiene_historial_empleo'] = df['historial_empleo'].apply(lambda x: int(isinstance(x, list) and len(x) > 0))
+
+    # Calcular media de horas_por_semana en historial_empleo (si no hay, usar media global)
+    def extraer_horas(row):
+        empleos = row.get('historial_empleo', [])
+        horas = []
+        if empleos and isinstance(empleos, list):
+            for e in empleos:
+                val = e.get('horas_por_semana', None)
+                try:
+                    valf = float(val)
+                    horas.append(valf)
+                except:
+                    continue
+        if horas:
+            return np.mean(horas)
+        return np.nan
+    df['horas_por_semana'] = df.apply(extraer_horas, axis=1)
+    global_mean_horas = df['horas_por_semana'].mean()
+    df['horas_por_semana'] = df['horas_por_semana'].fillna(global_mean_horas)
 
     # Variables categóricas one-hot (con 0/1 en vez de True/False)
     one_hot_features = ['sexo', 'raza_etnicidad', 'estado_civil', 'region']
@@ -99,11 +130,13 @@ def main():
     # Selección de features finales
     features = [
         'edad', 'estado_salud_percibido',
-        'ccsr_num_total', 'ccsr_otra_condicion'
+        'ccsr_num_total', 'ccsr_otra_condicion',
+        'categoria_pobreza', 'tiene_historial_empleo', 'horas_por_semana'
     ]
     # Agregar dummies y top CCSR
     features += [c for c in df.columns if c.startswith('sexo_') or c.startswith('raza_etnicidad_') or c.startswith('estado_civil_') or c.startswith('region_')]
     features += [f'ccsr_{c}' for c in top_ccsr]
+    features += [c for c in df.columns if c.startswith('seguro_')]
 
     # Eliminar person_id y columnas auxiliares
     X = df[features].copy()
